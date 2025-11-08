@@ -5,7 +5,7 @@ from app.schemas.user import (
     UserUpdate, ChangePasswordRequest
 )
 from app.models.user import UserModel
-from app.utils.security import verify_password, create_access_token  # Bỏ hash_password
+from app.utils.security import verify_password, create_access_token
 from app.utils.dependencies import get_current_user_id, get_current_user, get_current_active_user
 from app.database import get_database
 
@@ -37,7 +37,7 @@ async def register(user_data: UserRegister):
 
     new_user = UserModel.create_user(db, {
         "email": user_data.email,
-        "password_hash": plain_password,
+        "password": plain_password,
         "full_name": user_data.full_name,
         "phone": user_data.phone
     }, role="user")
@@ -74,7 +74,7 @@ async def register_admin(user_data: UserRegister):
 
     new_user = UserModel.create_user(db, {
         "email": user_data.email,
-        "password_hash": plain_password,  # Lưu plaintext
+        "password": plain_password, 
         "full_name": user_data.full_name,
         "phone": user_data.phone
     }, role="admin")
@@ -173,7 +173,7 @@ async def change_password(
 ):
     db = get_database()
 
-    if not verify_password(password_data.old_password, current_user["password_hash"]):
+    if not verify_password(password_data.old_password, current_user["password"]):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Incorrect old password"

@@ -6,7 +6,7 @@ from app.database import connect_to_mongo, close_mongo_connection
 from app.routes import auth, products
 from app.config import settings
 from app.models.user import UserModel
-from app.utils.security import verify_password  # Bỏ hash_password
+from app.utils.security import verify_password
 
 
 @asynccontextmanager
@@ -47,7 +47,7 @@ def create_default_admin(db):
         print(f"  Password: {admin_password}")
         print(f"  Please change password after first login!")
     else:
-        if verify_password(admin_password, existing_admin["password_hash"]):
+        if verify_password(admin_password, existing_admin["password"]):
             print(f"✓ Default admin already exists: {admin_email}")
             print(f"  Password: {admin_password} (unchanged)")
         else:

@@ -8,7 +8,7 @@ class UserModel:
     def create_user(db, user_data: dict, role: str = "user") -> dict:
         user_doc = {
             "email": user_data["email"],
-            "password_hash": user_data["password_hash"],
+            "password": user_data["password"],
             "full_name": user_data["full_name"],
             "phone": user_data["phone"],
             "role": role,  # "admin" or "user"
@@ -46,12 +46,12 @@ class UserModel:
             return None
 
     @staticmethod
-    def update_password(db, user_id: str, new_password_hash: str) -> bool:
+    def update_password(db, user_id: str, new_password: str) -> bool:
         try:
             result = db.users.update_one(
                 {"_id": ObjectId(user_id)},
                 {"$set": {
-                    "password_hash": new_password_hash,
+                    "password": new_password,
                     "updated_at": datetime.utcnow()
                 }}
             )
