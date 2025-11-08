@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, status, Depends
+
 from app.schemas.user import (
     UserRegister, UserLogin, UserResponse, TokenResponse,
     UserUpdate, ChangePasswordRequest
 )
 from app.models.user import UserModel
-from app.utils.security import hash_password, verify_password, create_access_token
+from app.utils.security import verify_password, create_access_token  # Bỏ hash_password
 from app.utils.dependencies import get_current_user_id, get_current_user, get_current_active_user
 from app.database import get_database
 
@@ -32,17 +33,16 @@ async def register(user_data: UserRegister):
             detail="Email already registered"
         )
 
-    hashed_password = hash_password(user_data.password)
+    plain_password = user_data.password
 
     new_user = UserModel.create_user(db, {
         "email": user_data.email,
-        "password_hash": hashed_password,
+        "password_hash": plain_password,
         "full_name": user_data.full_name,
         "phone": user_data.phone
     }, role="user")
 
     access_token = create_access_token(data={"sub": str(new_user["_id"])})
-
     user_response = UserModel.user_to_dict(new_user)
 
     return {
@@ -51,12 +51,12 @@ async def register(user_data: UserRegister):
         "user": user_response
     }
 
+
 '''
 @router.post("/register-admin", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register_admin(user_data: UserRegister):
     """
     Register a new admin user (role: admin)
-
     In production, this endpoint should be protected or removed!
     For development/testing only.
     """
@@ -69,17 +69,17 @@ async def register_admin(user_data: UserRegister):
             detail="Email already registered"
         )
 
-    hashed_password = hash_password(user_data.password)
+    # WARNING: Storing plaintext password - FOR TESTING ONLY!
+    plain_password = user_data.password
 
     new_user = UserModel.create_user(db, {
         "email": user_data.email,
-        "password_hash": hashed_password,
+        "password_hash": plain_password,  # Lưu plaintext
         "full_name": user_data.full_name,
         "phone": user_data.phone
     }, role="admin")
 
     access_token = create_access_token(data={"sub": str(new_user["_id"])})
-
     user_response = UserModel.user_to_dict(new_user)
 
     return {
@@ -88,6 +88,7 @@ async def register_admin(user_data: UserRegister):
         "user": user_response
     }
 '''
+
 
 @router.post("/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):
@@ -106,7 +107,7 @@ async def login(credentials: UserLogin):
             detail="Invalid email or password"
         )
 
-    if not verify_password(credentials.password, user["password_hash"]):
+    if not verify_password(credentials.password, user["password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
@@ -119,7 +120,6 @@ async def login(credentials: UserLogin):
         )
 
     access_token = create_access_token(data={"sub": str(user["_id"])})
-
     user_response = UserModel.user_to_dict(user)
 
     return {
@@ -133,7 +133,6 @@ async def login(credentials: UserLogin):
 async def get_current_user_info(current_user: dict = Depends(get_current_active_user)):
     """
     Get current logged-in user information
-
     Requires: Authorization header with Bearer token
     """
     return UserModel.user_to_dict(current_user)
@@ -158,7 +157,6 @@ async def update_current_user(
         )
 
     updated_user = UserModel.update_user(db, str(current_user["_id"]), update_data)
-
     if not updated_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -181,9 +179,8 @@ async def change_password(
             detail="Incorrect old password"
         )
 
-    new_password_hash = hash_password(password_data.new_password)
-
-    success = UserModel.update_password(db, str(current_user["_id"]), new_password_hash)
+    new_password_plain = password_data.new_password
+    success = UserModel.update_password(db, str(current_user["_id"]), new_password_plain)
 
     if not success:
         raise HTTPException(

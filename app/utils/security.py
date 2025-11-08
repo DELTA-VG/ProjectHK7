@@ -1,19 +1,12 @@
 from datetime import datetime, timedelta
 from typing import Optional
-from passlib.context import CryptContext
 import jwt
 from app.config import settings
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def hash_password(password: str) -> str:
-    bytes_pw = password.encode('utf-8')[:72]
-    return pwd_context.hash(bytes_pw)
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, stored_password: str) -> bool:
+    return plain_password == stored_password
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

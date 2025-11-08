@@ -6,13 +6,12 @@ from app.database import connect_to_mongo, close_mongo_connection
 from app.routes import auth, products
 from app.config import settings
 from app.models.user import UserModel
-from app.utils.security import hash_password, verify_password
+from app.utils.security import verify_password  # Bỏ hash_password
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events"""
-    # Startup
     print("Starting up...")
     db = connect_to_mongo()
 
@@ -20,7 +19,6 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown
     print("Shutting down...")
     close_mongo_connection()
 
@@ -38,24 +36,23 @@ def create_default_admin(db):
 
     if not existing_admin:
         print(f"Creating default admin user: {admin_email}")
-        hashed_password = hash_password(admin_password)
         UserModel.create_user(db, {
             "email": admin_email,
-            "password_hash": hashed_password,
+            "password": admin_password,
             "full_name": "Default Admin",
             "phone": "0000000000"
         }, role="admin")
-        print(f" Default admin created successfully!")
-        print(f" Email: {admin_email}")
-        print(f"    Password: {admin_password}")
-        print(f"     Please change password after first login!")
+        print(f"✓ Default admin created successfully!")
+        print(f"  Email: {admin_email}")
+        print(f"  Password: {admin_password}")
+        print(f"  Please change password after first login!")
     else:
         if verify_password(admin_password, existing_admin["password_hash"]):
-            print(f" Default admin already exists: {admin_email}")
-            print(f"   Password: {admin_password} (unchanged)")
+            print(f"✓ Default admin already exists: {admin_email}")
+            print(f"  Password: {admin_password} (unchanged)")
         else:
-            print(f" Admin user exists: {admin_email}")
-            print(f"    Password has been changed from default")
+            print(f"✓ Admin user exists: {admin_email}")
+            print(f"  Password has been changed from default")
 
 
 app = FastAPI(
@@ -65,7 +62,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
