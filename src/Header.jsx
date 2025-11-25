@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './Header.css'
+import TransitionLink from './TransitionLink'
 
 export default function Header() {
   const [cartCount] = useState(0)
@@ -31,20 +32,20 @@ export default function Header() {
     <header className={`header ${isVisible ? 'header-visible' : 'header-hidden'}`}>
       <div className="header-container">
         {/* Logo */}
-        <Link to="/" className="logo">
+        <TransitionLink to="/" className="logo">
           <div className="logo-icon">🧁</div>
           <span className="logo-text">Sweet Bakery</span>
-        </Link>
+        </TransitionLink>
 
         {/* Navigation */}
         <nav className="nav">
-          <Link to="/" className="nav-link">Home</Link>
-          <Link to="/about" className="nav-link">About</Link>
-          <Link to="/menu" className="nav-link">Our Menu</Link>
-          <Link to="/blog" className="nav-link">Blog</Link>
-          <Link to="/shop" className="nav-link">Shop</Link>
-          <Link to="/faq" className="nav-link">FAQ</Link>
-          <Link to="/contact" className="nav-link">Contact</Link>
+          <TransitionLink to="/" className="nav-link">Home</TransitionLink>
+          <TransitionLink to="/about" className="nav-link">About</TransitionLink>
+          <TransitionLink to="/menu" className="nav-link">Our Menu</TransitionLink>
+          <TransitionLink to="/blog" className="nav-link">Blog</TransitionLink>
+          <TransitionLink to="/shop" className="nav-link">Shop</TransitionLink>
+          <TransitionLink to="/faq" className="nav-link">FAQ</TransitionLink>
+          <TransitionLink to="/contact" className="nav-link">Contact</TransitionLink>
         </nav>
 
         {/* Right side */}

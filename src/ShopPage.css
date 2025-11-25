@@ -406,3 +406,44 @@
   color: rgba(255, 255, 255, 0.6);
   font-size: 18px;
 }
+/* ===== PRODUCT BADGE ===== */
+.product-image-wrapper {
+  position: relative;
+}
+
+.product-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  z-index: 10;
+}
+
+.badge-special {
+  background: #E8B4A8;
+  color: #3E2723;
+}
+
+.badge-new {
+  background: #4CAF50;
+  color: white;
+}
+
+.badge-popular {
+  background: #FF9800;
+  color: white;
+}
+
+.badge-bestseller {
+  background: #F44336;
+  color: white;
+}
+
+.badge-healthy {
+  background: #81C784;
+  color: white;
+}
