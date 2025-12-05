@@ -34,7 +34,19 @@ def create_indexes():
     db.products.create_index("name")
     db.products.create_index("is_available")
 
-    print("Database indexes created")
+    # Favourites indexes
+    db.favourites.create_index([("user_id", 1), ("product_id", 1)], unique=True)
+    db.favourites.create_index("user_id")
+    db.favourites.create_index("product_id")
+    db.favourites.create_index("created_at")
+
+    # Cart indexes
+    db.cart.create_index([("user_id", 1), ("product_id", 1)], unique=True)
+    db.cart.create_index("user_id")
+    db.cart.create_index("product_id")
+    db.cart.create_index("created_at")
+
+    print("✅ Database indexes created")
 
 
 def close_mongo_connection():
