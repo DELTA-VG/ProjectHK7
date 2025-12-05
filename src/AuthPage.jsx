@@ -27,8 +27,9 @@ export default function AuthPage() {
     }
 
     const data = await response.json()
-    localStorage.setItem('token', data.access_token)
-    navigate('/')
+localStorage.setItem('token', data.access_token)
+localStorage.setItem('userRole', data.user.role?.toLowerCase?.() ?? '')
+navigate('/home')
   }
 
   const handleChange = (event) => {
