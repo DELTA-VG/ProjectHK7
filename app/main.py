@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.database import connect_to_mongo, close_mongo_connection
-from app.routes import auth, products, questions
+from app.routes import auth, products, questions, favourites, cart
 from app.config import settings
 from app.models.user import UserModel
 from app.utils.security import verify_password
@@ -80,6 +80,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(questions.router)
+app.include_router(favourites.router)
+app.include_router(cart.router)
 
 @app.get("/")
 async def root():
