@@ -3,7 +3,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 class ApiService {
   /**
    * Get products with pagination and filters
-   * @param {Object} params - { skip, limit, category, search }
+   * @param {Object} params - { skip, limit, category, search, page }
    */
   async getProducts(params = {}) {
     const queryParams = new URLSearchParams()
@@ -117,6 +117,98 @@ class ApiService {
       
     } catch (error) {
       console.error('Error fetching product:', error)
+      throw error
+    }
+  }
+
+  // =======================
+  //       ADMIN CRUD
+  // =======================
+
+  /**
+   * Create new product (ADMIN)
+   * @param {Object} productData
+   * @param {string} token - JWT token của admin
+   */
+  async createProduct(productData, token) {
+    try {
+      const response = await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(productData),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Create product failed:', errorText)
+        throw new Error(`Create product failed: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error creating product:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update product (ADMIN)
+   * @param {string} id - product.id
+   * @param {Object} productData
+   * @param {string} token - JWT token
+   */
+  async updateProduct(id, productData, token) {
+    try {
+      const response = await fetch(`${API_URL}/products/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(productData),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Update product failed:', errorText)
+        throw new Error(`Update product failed: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error updating product:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete product (ADMIN) – backend sẽ set is_available = false
+   * @param {string} id
+   * @param {string} token
+   */
+  async deleteProduct(id, token) {
+     try {
+      const response = await fetch(`${API_URL}/products/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Delete product failed:', errorText)
+        throw new Error(`Delete product failed: ${response.status}`)
+      }
+
+      // ❗ Backend trả 204 No Content hoặc body rỗng
+      // => Không parse JSON nữa, chỉ trả true
+      return true
+    } catch (error) {
+      console.error('Error deleting product:', error)
       throw error
     }
   }

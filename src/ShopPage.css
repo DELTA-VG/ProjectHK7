@@ -447,3 +447,227 @@
   background: #81C784;
   color: white;
 }
+
+/* ===== ADMIN TOOLBAR BUTTON ===== */
+.admin-add-btn {
+  background: #e8b4a8;
+  border: none;
+  color: #3e2723;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.admin-add-btn:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 4px 12px rgba(232, 180, 168, 0.4);
+}
+
+/* ===== ADMIN FORM PANEL ===== */
+.admin-product-panel {
+  background: rgba(97, 71, 54, 0.45);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.admin-panel-title {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Georgia', serif;
+}
+
+.admin-product-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.admin-product-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  gap: 6px;
+}
+
+.admin-product-form input,
+.admin-product-form select,
+.admin-product-form textarea {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(232, 180, 168, 0.4);
+  background: rgba(62, 39, 35, 0.8);
+  color: #fff;
+  font-size: 14px;
+}
+
+.admin-product-form input:focus,
+.admin-product-form select:focus,
+.admin-product-form textarea:focus {
+  outline: none;
+  border-color: #e8b4a8;
+}
+
+.admin-form-full {
+  grid-column: 1 / -1;
+}
+
+.admin-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.admin-save-btn,
+.admin-cancel-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-save-btn {
+  background: #e8b4a8;
+  color: #3e2723;
+}
+
+.admin-cancel-btn {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(232, 180, 168, 0.4);
+}
+
+/* ===== ADMIN ACTIONS TRONG CARD ===== */
+.admin-product-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.admin-edit-btn,
+.admin-delete-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-edit-btn {
+  background: rgba(232, 180, 168, 0.9);
+  color: #3e2723;
+}
+
+.admin-delete-btn {
+  background: #d9534f;
+  color: #fff;
+}
+
+.product-card {
+  position: relative; /* để icon đặt tuyệt đối trong card */
+}
+
+.product-card {
+  position: relative;
+}
+
+/* Icon chữ i ở góc trên trái */
+.product-info-icon {
+  position: absolute;
+  top: 10px;
+  left: 10px;   /* 👈 dùng left thay vì right */
+  right: auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(232, 180, 168, 0.95);
+  color: #3E2723;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  z-index: 2; /* đảm bảo nằm trên ảnh */
+}
+
+.product-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.product-modal {
+  background: #3e2723;
+  border-radius: 16px;
+  max-width: 520px;
+  width: 90%;
+  padding: 24px 28px 28px;
+  position: relative;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  color: #fff;
+}
+
+.product-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(232, 180, 168, 0.95);
+  color: #3e2723;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.product-modal-title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 700;
+  font-family: 'Georgia', serif;
+}
+
+.product-modal-price {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #e8b4a8;
+}
+
+.product-modal-image {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  margin: 0 auto 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.product-modal-description,
+.product-modal-story {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+}

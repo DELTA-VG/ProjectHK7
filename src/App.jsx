@@ -11,6 +11,8 @@ import RequireAuth from './RequireAuth'
 import NotificationsPage from './NotificationsPage'
 import AdminQuestionsPage from './AdminQuestionsPage'
 import RequireAdmin from './RequireAdmin'
+import AdminProductsPage from './AdminProductsPage'
+
 
 import './App.css'
 
@@ -33,6 +35,7 @@ export default function App() {
         
         <Route element={<RequireAdmin />}>
           <Route path="/admin/questions" element={<AdminQuestionsPage />} />
+          <Route path="/admin/products" element={<AdminProductsPage />} />
         </Route>
       </Route>
     </Routes>
