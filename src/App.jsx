@@ -11,6 +11,9 @@ import RequireAuth from './RequireAuth'
 import NotificationsPage from './NotificationsPage'
 import AdminQuestionsPage from './AdminQuestionsPage'
 import RequireAdmin from './RequireAdmin'
+import CartPage from './CartPage'
+import FavouritePage from './FavouritePage'
+
 
 import './App.css'
 
@@ -29,6 +32,8 @@ export default function App() {
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/shop" element={<ShopPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/favourites" element={<FavouritePage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         
         <Route element={<RequireAdmin />}>

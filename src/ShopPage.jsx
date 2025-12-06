@@ -4,7 +4,7 @@ import SocialSidebar from './SocialSidebar'
 import ChatButton from './ChatButton'
 import Footer from './Footer'
 import './ShopPage.css'
-import api from './services/api'  // ← Import API service
+import api from './services/api'
 
 export default function ShopPage() {
   const [viewMode, setViewMode] = useState(4)
@@ -20,16 +20,30 @@ export default function ShopPage() {
   const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // ===== STATE CHO FAVOURITES =====
+  const [favouriteIds, setFavouriteIds] = useState(new Set())
+  const [favouriteLoading, setFavouriteLoading] = useState({})
+  const [favouritesLoaded, setFavouritesLoaded] = useState(false)
+  
+  // ===== STATE CHO CART ===== 
+  const [cartLoading, setCartLoading] = useState({})
 
-  // ===== FETCH CATEGORIES KHI MOUNT =====
+  // ===== FETCH CATEGORIES & FAVOURITES KHI MOUNT =====
   useEffect(() => {
-    fetchCategories()
+    const initData = async () => {
+      await fetchCategories()
+      await fetchFavouriteIds()
+    }
+    initData()
   }, [])
 
-  // ===== FETCH PRODUCTS KHI PARAMS THAY ĐỔI =====
+  // ===== FETCH PRODUCTS SAU KHI FAVOURITES ĐÃ LOAD =====
   useEffect(() => {
-    fetchProducts()
-  }, [currentPage, itemsPerPage, selectedCategory, sortBy])
+    if (favouritesLoaded) {
+      fetchProducts()
+    }
+  }, [currentPage, itemsPerPage, selectedCategory, sortBy, favouritesLoaded])
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -41,28 +55,59 @@ export default function ShopPage() {
     }
   }
 
+  // Fetch favourite IDs
+  const fetchFavouriteIds = async () => {
+    console.log('🔍 [FETCH FAV] Starting to fetch favourites...')
+    
+    try {
+      const token = localStorage.getItem('token')
+      console.log('🔑 [FETCH FAV] Token exists:', !!token)
+      
+      if (!token) {
+        console.log('⚠️ [FETCH FAV] No token, skipping favourites fetch')
+        setFavouritesLoaded(true)
+        return
+      }
+
+      console.log('📡 [FETCH FAV] Calling API...')
+      const favourites = await api.getFavourites({ skip: 0, limit: 100 })
+      console.log('📦 [FETCH FAV] Raw API response:', favourites)
+      console.log('📊 [FETCH FAV] Number of favourites:', favourites.length)
+      
+      const ids = new Set(favourites.map(fav => fav.product.id))
+      console.log('✅ [FETCH FAV] Favourite IDs Set:', Array.from(ids))
+      
+      setFavouriteIds(ids)
+      
+    } catch (err) {
+      console.error('❌ [FETCH FAV] Error fetching favourites:', err)
+    } finally {
+      console.log('🏁 [FETCH FAV] Finished, setting favouritesLoaded = true')
+      setFavouritesLoaded(true)
+    }
+  }
+
   // Fetch products
   const fetchProducts = async () => {
+    console.log('🛍️ [FETCH PRODUCTS] Starting to fetch products...')
+    console.log('💖 [FETCH PRODUCTS] Current favouriteIds:', Array.from(favouriteIds))
+    
     try {
       setLoading(true)
       setError(null)
       
-      // Tính skip cho pagination
       const skip = (currentPage - 1) * itemsPerPage
       
-      // Gọi API lấy products
       const productsData = await api.getProducts({
         skip,
         limit: itemsPerPage,
         category: selectedCategory === 'all' ? null : selectedCategory,
       })
       
-      // Gọi API đếm tổng số products
       const count = await api.getProductCount(
         selectedCategory === 'all' ? null : selectedCategory
       )
       
-      // Sort ở frontend (vì backend chưa có sort)
       let sortedProducts = [...productsData]
       
       switch (sortBy) {
@@ -79,26 +124,88 @@ export default function ShopPage() {
           sortedProducts.sort((a, b) => b.name.localeCompare(a.name))
           break
         default:
-          // Default order from backend (created_at desc)
           break
       }
       
       setProducts(sortedProducts)
       setTotalProducts(count)
       setTotalPages(Math.ceil(count / itemsPerPage))
-      setLoading(false)
+      
+      console.log('✅ [FETCH PRODUCTS] Products loaded:', sortedProducts.length)
       
     } catch (err) {
       console.error('Error fetching products:', err)
       setError(err.message)
+    } finally {
       setLoading(false)
+    }
+  }
+
+  // Toggle favourite
+  const toggleFavourite = async (productId) => {
+    console.log(`🔄 [TOGGLE] Product ID: ${productId}`)
+    console.log(`💖 [TOGGLE] Before - favouriteIds:`, Array.from(favouriteIds))
+    console.log(`🔍 [TOGGLE] Is currently favourite:`, favouriteIds.has(productId))
+    
+    setFavouriteLoading(prev => ({ ...prev, [productId]: true }))
+    
+    try {
+      const isFavourite = favouriteIds.has(productId)
+      
+      if (isFavourite) {
+        console.log(`💔 [TOGGLE] Removing ${productId} from favourites...`)
+        await api.removeFromFavourites(productId)
+        setFavouriteIds(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(productId)
+          console.log(`💔 [TOGGLE] After remove - favouriteIds:`, Array.from(newSet))
+          return newSet
+        })
+      } else {
+        console.log(`❤️ [TOGGLE] Adding ${productId} to favourites...`)
+        await api.addToFavourites(productId)
+        setFavouriteIds(prev => {
+          const newSet = new Set(prev).add(productId)
+          console.log(`❤️ [TOGGLE] After add - favouriteIds:`, Array.from(newSet))
+          return newSet
+        })
+      }
+    } catch (err) {
+      console.error('❌ [TOGGLE] Error toggling favourite:', err)
+      alert(err.message || 'Failed to update favourites')
+    } finally {
+      setFavouriteLoading(prev => ({ ...prev, [productId]: false }))
+    }
+  }
+
+  // Add to cart
+  const addToCart = async (productId, e) => {
+    e.stopPropagation()
+    
+    const token = localStorage.getItem('token')
+    if (!token) {
+      alert('Please login to add items to cart')
+      return
+    }
+
+    console.log('🛒 [ADD TO CART] Product ID:', productId)
+    setCartLoading(prev => ({ ...prev, [productId]: true }))
+    
+    try {
+      await api.addToCart(productId, 1)
+      alert('✅ Product added to cart!')
+    } catch (err) {
+      console.error('❌ [ADD TO CART] Error:', err)
+      alert(err.message || 'Failed to add to cart')
+    } finally {
+      setCartLoading(prev => ({ ...prev, [productId]: false }))
     }
   }
 
   // Handle category change
   const handleCategoryChange = (categoryId) => {
     setSelectedCategory(categoryId)
-    setCurrentPage(1)  // Reset về trang 1
+    setCurrentPage(1)
   }
 
   // Handle sort change
@@ -264,22 +371,50 @@ export default function ShopPage() {
 
             {/* Product Grid */}
             <div className={`product-grid cols-${viewMode}`}>
-              {products.map(product => (
-                <div key={product.id} className="product-card">
-                  <div className="product-image-wrapper">
-                    <img src={product.image} alt={product.name} className="product-image" />
-                    {product.badge && (
-                      <span className={`product-badge badge-${product.badge.toLowerCase()}`}>
-                        {product.badge}
-                      </span>
-                    )}
+              {products.map(product => {
+                const isFav = favouriteIds.has(product.id)
+                
+                return (
+                  <div key={product.id} className="product-card">
+                    <div className="product-image-wrapper">
+                      <img src={product.image} alt={product.name} className="product-image" />
+                      {product.badge && (
+                        <span className={`product-badge badge-${product.badge.toLowerCase()}`}>
+                          {product.badge}
+                        </span>
+                      )}
+                      
+                      {/* Favourite Button - Trên bên trái */}
+                      <button 
+                        className={`shop-favourite-btn ${isFav ? 'is-favourite' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleFavourite(product.id)
+                        }}
+                        disabled={favouriteLoading[product.id]}
+                        title={isFav ? 'Remove from favourites' : 'Add to favourites'}
+                      >
+                        {favouriteLoading[product.id] ? '...' : '❤️'}
+                      </button>
+
+                      {/* Cart Button - Dưới bên trái */}
+                      <button 
+                        className="shop-cart-btn"
+                        onClick={(e) => addToCart(product.id, e)}
+                        disabled={cartLoading[product.id]}
+                        title="Add to cart"
+                      >
+                        {cartLoading[product.id] ? '...' : '🛒'}
+                      </button>
+                    </div>
+                    
+                    <div className="product-info">
+                      <h3 className="product-name">{product.name}</h3>
+                      <p className="product-price">${product.price.toFixed(2)}</p>
+                    </div>
                   </div>
-                  <div className="product-info">
-                    <h3 className="product-name">{product.name}</h3>
-                    <p className="product-price">${product.price.toFixed(2)}</p>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Empty State */}

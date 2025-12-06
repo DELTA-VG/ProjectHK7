@@ -118,6 +118,9 @@ export default function Header() {
             🛒 Cart
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
           </Link>
+          <Link to="/favourites" className="favourites-btn">
+            ❤️ Favourites
+          </Link>
         </div>
       </div>
     </header>

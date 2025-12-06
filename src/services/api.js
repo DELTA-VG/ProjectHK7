@@ -120,6 +120,335 @@ class ApiService {
       throw error
     }
   }
+
+  // ============ FAVOURITES API ============
+
+  /**
+   * Get user's favourites with pagination
+   * @param {Object} params - { skip, limit }
+   */
+  async getFavourites(params = {}) {
+    const queryParams = new URLSearchParams()
+    
+    if (params.skip !== undefined) queryParams.append('skip', params.skip)
+    if (params.limit) queryParams.append('limit', params.limit)
+    
+    const url = `${API_URL}/favourites?${queryParams.toString()}`
+    
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+      
+    } catch (error) {
+      console.error('Error fetching favourites:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get count of user's favourites
+   */
+  async getFavouritesCount() {
+    try {
+      const response = await fetch(`${API_URL}/favourites/count`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      return data.count
+      
+    } catch (error) {
+      console.error('Error fetching favourites count:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Check if product is in favourites
+   * @param {string} productId - Product ID
+   */
+  async checkIsFavourite(productId) {
+    try {
+      const response = await fetch(`${API_URL}/favourites/check/${productId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      return data.is_favourite
+      
+    } catch (error) {
+      console.error('Error checking favourite status:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Add product to favourites
+   * @param {string} productId - Product ID
+   */
+  async addToFavourites(productId) {
+    try {
+      const response = await fetch(`${API_URL}/favourites/${productId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to add to favourites')
+      }
+      
+      return await response.json()
+      
+    } catch (error) {
+      console.error('Error adding to favourites:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Remove product from favourites
+   * @param {string} productId - Product ID
+   */
+  async removeFromFavourites(productId) {
+    try {
+      const response = await fetch(`${API_URL}/favourites/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to remove from favourites')
+      }
+      
+      return await response.json()
+      
+    } catch (error) {
+      console.error('Error removing from favourites:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Clear all favourites
+   */
+  async clearFavourites() {
+    try {
+      const response = await fetch(`${API_URL}/favourites`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+      
+    } catch (error) {
+      console.error('Error clearing favourites:', error)
+      throw error
+    }
+  }
+
+  // ============ CART API ============
+
+  /**
+   * Get user's cart
+   */
+  async getCart() {
+    try {
+      const response = await fetch(`${API_URL}/cart`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+      
+    } catch (error) {
+      console.error('Error fetching cart:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get cart total (subtotal, shipping, total)
+   */
+  async getCartTotal() {
+    try {
+      const response = await fetch(`${API_URL}/cart/total`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+      
+    } catch (error) {
+      console.error('Error fetching cart total:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Add product to cart
+   * @param {string} productId - Product ID
+   * @param {number} quantity - Quantity to add (default: 1)
+   */
+  async addToCart(productId, quantity = 1) {
+    try {
+      const response = await fetch(`${API_URL}/cart/${productId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ quantity })
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to add to cart')
+      }
+      
+      return await response.json()
+      
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update cart item quantity
+   * @param {string} productId - Product ID
+   * @param {number} quantity - New quantity (0 to remove)
+   */
+  async updateCartQuantity(productId, quantity) {
+    try {
+      const response = await fetch(`${API_URL}/cart/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ quantity })
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to update cart')
+      }
+      
+      return await response.json()
+      
+    } catch (error) {
+      console.error('Error updating cart:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Remove item from cart
+   * @param {string} productId - Product ID
+   */
+  async removeFromCart(productId) {
+    try {
+      const response = await fetch(`${API_URL}/cart/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to remove from cart')
+      }
+      
+      return await response.json()
+      
+    } catch (error) {
+      console.error('Error removing from cart:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Clear all items from cart
+   */
+  async clearCart() {
+    try {
+      const response = await fetch(`${API_URL}/cart`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      return await response.json()
+      
+    } catch (error) {
+      console.error('Error clearing cart:', error)
+      throw error
+    }
+  }
 }
 
 export default new ApiService()
