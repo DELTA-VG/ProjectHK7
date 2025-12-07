@@ -67,6 +67,7 @@ export default function ShopPage() {
 
   // ===== FETCH CATEGORIES & FAVOURITES & INGREDIENTS KHI MOUNT =====
   useEffect(() => {
+    window.scrollTo(0, 0)
     const initData = async () => {
       await fetchCategories()
       await fetchFavouriteIds()
@@ -807,26 +808,29 @@ export default function ShopPage() {
                 
                 return (
                   <div key={product.id} className="product-card">
-                    <button
-                      type="button"
-                      className="product-info-icon"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedProduct(product)
-                      }}
-                      title="View description"
-                    >
-                      i
-                    </button>
-
                     <div className="product-image-wrapper">
                       <img src={product.image} alt={product.name} className="product-image" />
+                      
                       {product.badge && (
                         <span className={`product-badge badge-${product.badge.toLowerCase()}`}>
                           {product.badge}
                         </span>
                       )}
                       
+                      {/* NÚT CHI TIẾT - LUÔN HIỂN THỊ */}
+                      <button
+                        type="button"
+                        className="product-detail-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedProduct(product)
+                        }}
+                        title="View product details"
+                      >
+                        Chi tiết
+                      </button>
+
+                      {/* NÚT FAVOURITE - LUÔN HIỂN THỊ */}
                       <button 
                         className={`shop-favourite-btn ${isFav ? 'is-favourite' : ''}`}
                         onClick={(e) => {
@@ -839,6 +843,7 @@ export default function ShopPage() {
                         {favouriteLoading[product.id] ? '...' : '❤️'}
                       </button>
 
+                      {/* NÚT CART - CHỈ HIỆN KHI HOVER */}
                       <button 
                         className="shop-cart-btn"
                         onClick={(e) => addToCart(product.id, e)}

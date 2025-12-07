@@ -16,38 +16,48 @@ export default function FAQPage() {
   })
   const [statusMessage, setStatusMessage] = useState('')
 
-  const faqs = [
-    {
-      id: 1,
-      question: 'What are your opening hours?',
-      answer: 'We are open daily from 8:00 AM to 10:00 PM. Weekend hours may vary during holidays and special events.'
-    },
-    {
-      id: 2,
-      question: 'Do you offer non-dairy or plant-based milk options?',
-      answer: 'Yes! We offer a variety of alternatives including oat milk, almond milk, soy milk, and coconut milk.'
-    },
-    {
-      id: 3,
-      question: 'Can I reserve a table in advance?',
-      answer: 'Absolutely. You can reserve a table by calling us directly or using the reservation form on our website.'
-    },
-    {
-      id: 4,
-      question: 'Do you have Wi-Fi available for customers?',
-      answer: 'Yes, we provide free high-speed Wi-Fi for all our customers. Just ask our staff for the password!'
-    },
-    {
-      id: 5,
-      question: 'Are your coffee beans locally sourced or imported?',
-      answer: 'We source our premium coffee beans from both local roasters and certified international suppliers to ensure the highest quality.'
-    },
-    {
-      id: 6,
-      question: 'Can I host a private event or meeting at your cafe?',
-      answer: 'Yes! We have dedicated spaces for private events and meetings. Please contact us to discuss your requirements and availability.'
-    }
-  ]
+const faqs = [
+  {
+    id: 1,
+    question: 'Tiệm bánh mở cửa lúc mấy giờ?',
+    answer: 'Chúng tôi mở cửa hàng ngày từ 7:00 sáng đến 9:00 tối. Giờ mở cửa có thể thay đổi vào ngày lễ và dịp đặc biệt.'
+  },
+  {
+    id: 2,
+    question: 'Tôi có thể đặt bánh sinh nhật trước không?',
+    answer: 'Có chứ! Bạn nên đặt trước ít nhất 2-3 ngày để chúng tôi chuẩn bị kỹ lưỡng. Với bánh custom design thì nên đặt trước 5-7 ngày nhé.'
+  },
+  {
+    id: 3,
+    question: 'Bánh của Sweet Bakery có dùng nguyên liệu sạch không?',
+    answer: 'Tất nhiên rồi! Chúng tôi cam kết sử dụng 100% bơ tươi, trứng gà ta, bột mì nhập khẩu và chocolate chất lượng cao. Không chất bảo quản.'
+  },
+  {
+    id: 4,
+    question: 'Có ship bánh tận nhà không?',
+    answer: 'Có ạ! Chúng tôi giao hàng miễn phí trong bán kính 5km. Ngoài khu vực đó sẽ tính phí ship theo khoảng cách.'
+  },
+  {
+    id: 5,
+    question: 'Tiệm có bánh cho người ăn chay hoặc không gluten không?',
+    answer: 'Có! Chúng tôi có dòng bánh vegan (không trứng sữa) và bánh gluten-free. Vui lòng đặt trước để được tư vấn kỹ hơn nhé.'
+  },
+  {
+    id: 6,
+    question: 'Tôi muốn đặt bánh cho tiệc cưới/sự kiện lớn thì làm thế nào?',
+    answer: 'Bạn liên hệ trực tiếp với bộ phận Catering & Events của chúng tôi. Chúng tôi có kinh nghiệm phục vụ tiệc từ 50-500 khách với nhiều mẫu bánh đa dạng.'
+  },
+  {
+    id: 7,
+    question: 'Bánh để được bao lâu?',
+    answer: 'Bánh kem nên dùng trong 1-2 ngày và bảo quản trong tủ lạnh. Bánh cookies, brownies có thể để 4-5 ngày ở nhiệt độ phòng trong hộp kín.'
+  },
+  {
+    id: 8,
+    question: 'Có chương trình khuyến mãi hoặc thẻ thành viên không?',
+    answer: 'Có! Chúng tôi có chương trình tích điểm cho khách hàng thân thiết và ưu đãi đặc biệt vào sinh nhật. Mua từ 500k trở lên được giảm 10%.'
+  }
+]
 
   const toggleFAQ = (index) => {
     setOpenIndex(openIndex === index ? null : index)
@@ -120,7 +130,7 @@ export default function FAQPage() {
           <div className="faq-left">
             <div className="faq-hero">
               <img 
-                src="https://images.unsplash.com/photo-1511920170033-f8396924c348?w=600&q=80" 
+                src="https://bizweb.dktcdn.net/100/438/465/files/banh-croissant-sapo.png?v=1713352654660" 
                 alt="Espresso Machine" 
                 className="hero-image"
               />

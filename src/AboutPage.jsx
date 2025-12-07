@@ -12,28 +12,28 @@ export default function AboutPage() {
   const testimonials = [
     {
       id: 1,
-      text: "XTRA Cafe is my go-to spot for amazing coffee and a relaxing vibe. The staff are always friendly and kind, and the desserts are next-level. Whether I'm working or catching up with friends and family, it's the perfect place to be.",
+      text: "Sweet Bakery luôn khiến mình mê mẩn với bánh ngọt mới nướng mỗi sáng. Cửa tiệm lúc nào cũng thơm mùi bơ, và nhân viên thì dễ thương nữa. Mỗi lần tới là một lần được nuông chiều vị giác.",
       name: "Jane Carter",
-      role: "Artist",
+      role: "Food Blogger",
       avatar: "https://randomuser.me/api/portraits/women/44.jpg"
     },
     {
       id: 2,
-      text: "I love the cozy ambiance and top-notch service at XTRA Cafe. Their specialty lattes and fresh pastries never disappoint. It's a hidden gem that combines great taste, comfort, and great music—definitely a must-visit in town!",
+      text: "Không chỉ cà phê thơm, bánh ngọt ở đây còn đậm đà và đẹp như tác phẩm nghệ thuật. Mình thường ghé Sweet mỗi cuối tuần, vừa ăn vừa làm việc – cảm giác rất chill.",
       name: "David Smith",
-      role: "Student",
+      role: "Designer",
       avatar: "https://randomuser.me/api/portraits/men/32.jpg"
     },
     {
       id: 3,
-      text: "The best coffee shop in the city! Every visit feels like coming home. The baristas remember my order, and the atmosphere is perfect for both work and relaxation. Highly recommended!",
+      text: "Bánh kem ở Sweet là một trong những điều mình luôn giới thiệu với bạn bè. Từng chiếc bánh đều tươi mới, topping sáng tạo và đúng chuẩn hương vị Âu-Á.",
       name: "Sarah Johnson",
-      role: "Designer",
+      role: "Event Planner",
       avatar: "https://randomuser.me/api/portraits/women/68.jpg"
     },
     {
       id: 4,
-      text: "Amazing place with incredible coffee! The interior design is beautiful, and the staff are wonderful. I bring all my clients here for meetings. It never disappoints!",
+      text: "Không gian ấm cúng + bánh chất lượng = combo hoàn hảo của Sweet Bakery. Tôi đưa khách hàng tới đây vì vừa tiện làm việc, vừa tận hưởng đồ ăn ngon.",
       name: "Michael Brown",
       role: "Entrepreneur",
       avatar: "https://randomuser.me/api/portraits/men/52.jpg"
@@ -41,32 +41,34 @@ export default function AboutPage() {
   ]
 
   // Data cho Expert Chefs
+  // ...existing code...
   const chefs = [
     {
       id: 1,
       name: "Jimmy Roland",
-      role: "Founder",
-      image: "https://images.unsplash.com/photo-1583394293214-28ded15ee548?w=400&q=80"
+      role: "Founder & Master Baker",
+      image: "https://png.pngtree.com/png-clipart/20240325/original/pngtree-chef-cook-baker-holding-serving-pastry-bakery-products-png-image_14672762.png"
     },
     {
       id: 2,
       name: "Nicolas Xavier",
-      role: "Chef",
-      image: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400&q=80"
+      role: "Signature Pastry Chef",
+      image: "https://png.pngtree.com/png-clipart/20231019/original/pngtree-chef-cook-baker-holding-serving-pastry-bakery-products-png-image_13363500.png"
     },
     {
       id: 3,
       name: "Alex Hernandez",
-      role: "Chef",
-      image: "https://images.unsplash.com/photo-1624947506148-f1c85bfe68b1?w=400&q=80"
+      role: "Artisan Chocolate Chef",
+      image: "https://c.pxhere.com/images/9a/5a/5e5ce6847f632abda54c8abc2500-1683548.jpg!d"
     },
     {
       id: 4,
       name: "Robert Gray",
-      role: "Waiter",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80"
+      role: "Experience Barista",
+      image: "https://chefjob.vn/wp-content/uploads/2019/07/guong-mat-vang-trong-lang-banh-ngot.jpg"
     }
   ]
+// ...existing code...
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 2 >= testimonials.length ? 0 : prev + 2))
@@ -100,16 +102,16 @@ export default function AboutPage() {
         <div className="our-history-container">
           <div className="history-content">
             <h2 className="section-title">
-              Our <span className="highlight">History</span>
+              Our <span className="highlight">Bakery Story</span>
             </h2>
             <p className="history-text">
-              Founded in 1998 in the heart of New York City, XTRA Cafe began as a cozy neighborhood spot with a passion for premium coffee and warm hospitality. Over the years, it grew into a global brand, now proudly serving customers in over 90 branches worldwide, while staying true to its original charm and quality.
+              Khởi nguồn từ một tiệm bánh nhỏ vào năm 1998 giữa lòng Hà Nội, Sweet Bakery đã mở rộng thành chuỗi bánh ngọt tinh tế, nơi kết hợp giữa truyền thống làm bánh Âu và nguyên liệu vùng ven. Mỗi ổ bánh, từng lát pastry đều được tạo nên bởi thợ cả tận tâm, cam kết giữ đúng hương vị nguyên bản dù đã lan rộng ra hơn 50 cửa hàng trên toàn quốc.
             </p>
           </div>
           <div className="history-image">
             <img 
-              src="https://images.unsplash.com/photo-1559305616-3f99cd43e353?w=800&q=80" 
-              alt="Coffee shop interior with menu boards" 
+              src="https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=900&q=80" 
+              alt="Artisan bakery display" 
             />
           </div>
         </div>
@@ -119,20 +121,20 @@ export default function AboutPage() {
       <section className="stats-section">
         <div className="stats-container">
           <div className="stat-item">
-            <div className="stat-number">14<span className="plus">+</span></div>
-            <div className="stat-label">Meeting Rooms</div>
+            <div className="stat-number">52<span className="plus">+</span></div>
+            <div className="stat-label">Bánh Signature</div>
           </div>
           <div className="stat-item">
-            <div className="stat-number">56<span className="plus">+</span></div>
-            <div className="stat-label">Menu Items</div>
+            <div className="stat-number">120<span className="plus">+</span></div>
+            <div className="stat-label">Xuất khẩu mỗi tháng</div>
           </div>
           <div className="stat-item">
-            <div className="stat-number">170<span className="k">k</span></div>
-            <div className="stat-label">Coffee Served</div>
+            <div className="stat-number">250<span className="k">k</span></div>
+            <div className="stat-label">Khách hàng happy</div>
           </div>
           <div className="stat-item">
             <div className="stat-number">90<span className="plus">+</span></div>
-            <div className="stat-label">Town Branches</div>
+            <div className="stat-label">Cửa hàng toàn quốc</div>
           </div>
         </div>
       </section>
@@ -142,16 +144,16 @@ export default function AboutPage() {
         <div className="enjoy-container">
           <div className="enjoy-image">
             <img 
-              src="https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=600&q=80" 
-              alt="Barista making coffee" 
+              src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80" 
+              alt="Baker preparing pastries" 
             />
           </div>
           <div className="enjoy-content">
             <h2 className="section-title">
-              <span className="highlight">Enjoy</span> Having Fun & Making <span className="highlight">Progress</span>
+              <span className="highlight">Enjoy</span> Fresh Bakes & <span className="highlight">Sweet Moments</span>
             </h2>
             <p className="enjoy-text">
-              At XTRA Cafe, we believe in creating a space where people can relax, connect, and be productive. Whether you're here for a quick espresso or a long work session, we provide the perfect atmosphere to enjoy your time and make progress on what matters most.
+              Tại Sweet Bakery, mỗi sản phẩm đều được làm với nguyên liệu sạch, quá trình lên men thủ công và trang trí tinh tế. Chúng tôi biến những khoảnh khắc nhỏ thành kỷ niệm ngọt ngào cho bạn, từ những ly cà phê sáng tới tiệc cưới hoành tráng.
             </p>
           </div>
         </div>
@@ -206,13 +208,13 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Expert Chefs Section - PHẦN MỚI */}
+      {/* Expert Chefs Section */}
       <section className="chefs-section">
         <div className="chefs-container">
           <h2 className="section-title-center-dark">
             Our <span className="highlight">Expert Chefs</span>
           </h2>
-          <p className="chefs-subtitle">Meet our professional team members</p>
+          <p className="chefs-subtitle">Những nghệ nhân làm bánh hàng đầu</p>
 
           <div className="chefs-grid">
             {chefs.map((chef) => (

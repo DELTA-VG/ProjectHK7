@@ -60,17 +60,15 @@ export default function ContactPage() {
               Get In <span className="highlight">Touch</span> With Us
             </h2>
             <p className="contact-description">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
-              tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim 
-              veniam, quis nostrud exercitation.
+              
             </p>
 
             {/* Contact Info */}
             <div className="contact-info">
               <div className="contact-info-item">
                 <div className="info-icon">✉️</div>
-                <a href="mailto:support@coffeeshop.site" className="info-text">
-                  support@coffeeshop.site
+                <a href="mailto:bakerycake@coffeeshop.site" className="info-text">
+                  bakerycake@cakeshop.site
                 </a>
               </div>
               <div className="contact-info-item">
@@ -177,7 +175,7 @@ export default function ContactPage() {
       {/* Map Section */}
       <section className="map-section">
         <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d193595.15830869428!2d-74.11976!3d40.697403!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c24fa5d33f083b%3A0xc80b8f06e177fe62!2sNew%20York%2C%20NY%2C%20USA!5e0!3m2!1sen!2s!4v1234567890123!5m2!1sen!2s"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.096890183977!2d105.84117631533315!3d21.028511793005486!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ab953357c995%3A0x516b63e99c972d80!2zSG_DoG4gS2nhur9tIExha2UsIEhhbm9p!5e0!3m2!1sen!2s!4v1670000000000!5m2!1sen!2s"
           width="100%"
           height="500"
           style={{ border: 0 }}
