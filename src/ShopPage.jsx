@@ -1,266 +1,499 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Header from './Header'
 import SocialSidebar from './SocialSidebar'
 import ChatButton from './ChatButton'
 import Footer from './Footer'
-import { useAuth } from './contexts/AuthContext'
-import { useCart } from './contexts/CartContext'
-import { useToast } from './contexts/ToastContext'
-import LoginModal from './LoginModal'
 import './ShopPage.css'
-
-const API_URL = 'http://localhost:8000/api'
+import api from './services/api'
 
 export default function ShopPage() {
-  const { user } = useAuth()
-  const { addToCart } = useCart()
-  const toast = useToast()
-  const [showLogin, setShowLogin] = useState(false)
-  const [addingId, setAddingId] = useState(null)
   const [viewMode, setViewMode] = useState(4)
   const [itemsPerPage, setItemsPerPage] = useState(12)
   const [sortBy, setSortBy] = useState('default')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  
+  // ===== STATE CHO API DATA =====
   const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
+  const [totalProducts, setTotalProducts] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  
+  // ===== STATE CHO FAVOURITES =====
+  const [favouriteIds, setFavouriteIds] = useState(new Set())
+  const [favouriteLoading, setFavouriteLoading] = useState({})
+  const [favouritesLoaded, setFavouritesLoaded] = useState(false)
+  
+  // ===== STATE CHO CART ===== 
+  const [cartLoading, setCartLoading] = useState({})
 
-  // Fetch products from API
+  // ===== ADMIN STATE =====
+  const [showAdminForm, setShowAdminForm] = useState(false)
+  const [editingProduct, setEditingProduct] = useState(null)
+  const [adminForm, setAdminForm] = useState({
+    name: '',
+    category: 'birthday-cakes',
+    price: '',
+    description: '',
+    image: '',
+    badge: '',
+  })
+  
+  // ===== INGREDIENTS STATE =====
+  const [availableIngredients, setAvailableIngredients] = useState([])
+  const [selectedIngredients, setSelectedIngredients] = useState([])
+
+  // ===== REVIEW STATE =====
+  const [productReviews, setProductReviews] = useState([])
+  const [productRating, setProductRating] = useState(null)
+  const [canReview, setCanReview] = useState(null)
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: ''
+  })
+  const [reviewLoading, setReviewLoading] = useState(false)
+
+  const token = localStorage.getItem('token')
+  const userRole = localStorage.getItem('userRole')
+  const isAdmin = !!token && userRole === 'admin'
+
+  // ===== FETCH CATEGORIES & FAVOURITES & INGREDIENTS KHI MOUNT =====
   useEffect(() => {
-    fetchProducts()
-  }, [])
-
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch(`${API_URL}/products?limit=100`)
-      if (res.ok) {
-        const data = await res.json()
-        if (data.length > 0) {
-          setProducts(data)
-          setLoading(false)
-          return
-        }
+    const initData = async () => {
+      await fetchCategories()
+      await fetchFavouriteIds()
+      if (isAdmin) {
+        await fetchAvailableIngredients()
       }
-    } catch (err) {
-      console.log('API not available, using static data')
     }
-    // Fallback to static data
-    setProducts(staticProducts)
-    setLoading(false)
+    initData()
+  }, [isAdmin])
+
+  // ===== FETCH PRODUCTS SAU KHI FAVOURITES ĐÃ LOAD =====
+  useEffect(() => {
+    if (favouritesLoaded) {
+      fetchProducts()
+    }
+  }, [currentPage, itemsPerPage, selectedCategory, sortBy, favouritesLoaded])
+
+  // ===== FETCH REVIEWS KHI MỞ MODAL =====
+  useEffect(() => {
+    if (selectedProduct) {
+      fetchProductReviews(selectedProduct.id)
+      fetchProductRating(selectedProduct.id)
+      checkCanReview(selectedProduct.id)
+    }
+  }, [selectedProduct])
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const data = await api.getCategories()
+      setCategories(data)
+    } catch (err) {
+      console.error('Error fetching categories:', err)
+    }
   }
 
-  // ===== STATIC DATA FALLBACK =====
-  const categories = [
-    { id: 'all', name: 'All Products', count: 0 },
-    { id: 'birthday-cakes', name: 'Birthday Cakes', count: 0 },
-    { id: 'bread-savory', name: 'Bread & Savory', count: 0 },
-    { id: 'cookies-minicakes', name: 'Cookies & Minicakes', count: 0 },
-    { id: 'beverages', name: 'Beverages', count: 0 }
-  ]
+  // Fetch favourite IDs
+  const fetchFavouriteIds = async () => {
+    console.log('🔍 [FETCH FAV] Starting to fetch favourites...')
+    
+    try {
+      const token = localStorage.getItem('token')
+      console.log('🔑 [FETCH FAV] Token exists:', !!token)
+      
+      if (!token) {
+        console.log('⚠️ [FETCH FAV] No token, skipping favourites fetch')
+        setFavouritesLoaded(true)
+        return
+      }
 
-  const staticProducts = [
-    // ===== BIRTHDAY CAKES =====
-    { 
-      id: 1, 
-      name: 'Chocolate Birthday Cake', 
-      price: 45.00, 
-      category: 'birthday-cakes',
-      description: 'Rich chocolate layers with vanilla cream filling',
-      image: 'https://images.unsplash.com/photo-1558636508-e0db3814bd1d?w=400&q=80'
-    },
-    { 
-      id: 2, 
-      name: 'Strawberry Delight Cake', 
-      price: 42.00, 
-      category: 'birthday-cakes',
-      description: 'Fresh strawberries with whipped cream frosting',
-      image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&q=80'
-    },
-    { 
-      id: 3, 
-      name: 'Red Velvet Cake', 
-      price: 48.00, 
-      category: 'birthday-cakes',
-      description: 'Classic red velvet with cream cheese frosting',
-      image: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?w=400&q=80'
-    },
-    { 
-      id: 4, 
-      name: 'Rainbow Birthday Cake', 
-      price: 50.00, 
-      category: 'birthday-cakes',
-      description: 'Colorful layers perfect for kids parties',
-      image: 'https://images.unsplash.com/photo-1588195538326-c5b1e5b80804?w=400&q=80'
-    },
-    { 
-      id: 5, 
-      name: 'Vanilla Dream Cake', 
-      price: 40.00, 
-      category: 'birthday-cakes',
-      description: 'Light vanilla sponge with buttercream',
-      image: 'https://images.unsplash.com/photo-1535141192574-5d4897c12636?w=400&q=80'
-    },
-    { 
-      id: 6, 
-      name: 'Tiramisu Cake', 
-      price: 52.00, 
-      category: 'birthday-cakes',
-      description: 'Italian coffee-flavored dessert cake',
-      image: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=400&q=80'
-    },
-
-    // ===== BREAD & SAVORY =====
-    { 
-      id: 7, 
-      name: 'Croissant', 
-      price: 4.50, 
-      category: 'bread-savory',
-      description: 'Buttery French pastry, perfectly flaky',
-      image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&q=80'
-    },
-    { 
-      id: 8, 
-      name: 'Sourdough Bread', 
-      price: 8.00, 
-      category: 'bread-savory',
-      description: 'Artisan sourdough with crispy crust',
-      image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80'
-    },
-    { 
-      id: 9, 
-      name: 'Cheese Danish', 
-      price: 5.50, 
-      category: 'bread-savory',
-      description: 'Sweet pastry filled with cream cheese',
-      image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&q=80'
-    },
-    { 
-      id: 10, 
-      name: 'Savory Quiche', 
-      price: 12.00, 
-      category: 'bread-savory',
-      description: 'Bacon, spinach and cheese quiche',
-      image: 'https://images.unsplash.com/photo-1621743478914-cc8a86d7e9d5?w=400&q=80'
-    },
-    { 
-      id: 11, 
-      name: 'Baguette', 
-      price: 6.00, 
-      category: 'bread-savory',
-      description: 'Traditional French bread loaf',
-      image: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=400&q=80'
-    },
-    { 
-      id: 12, 
-      name: 'Garlic Bread', 
-      price: 7.50, 
-      category: 'bread-savory',
-      description: 'Toasted bread with garlic butter',
-      image: 'https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?w=400&q=80'
-    },
-
-    // ===== COOKIES & MINICAKES =====
-    { 
-      id: 13, 
-      name: 'Chocolate Chip Cookies', 
-      price: 12.00, 
-      category: 'cookies-minicakes',
-      description: 'Classic cookies with chocolate chips (6 pcs)',
-      image: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400&q=80'
-    },
-    { 
-      id: 14, 
-      name: 'Oatmeal Raisin Cookies', 
-      price: 11.00, 
-      category: 'cookies-minicakes',
-      description: 'Healthy oatmeal cookies with raisins (6 pcs)',
-      image: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&q=80'
-    },
-    { 
-      id: 15, 
-      name: 'Red Velvet Cupcake', 
-      price: 8.00, 
-      category: 'cookies-minicakes',
-      description: 'Mini red velvet with cream cheese frosting',
-      image: 'https://images.unsplash.com/photo-1614707267537-b85aaf00c4b7?w=400&q=80'
-    },
-    { 
-      id: 16, 
-      name: 'Chocolate Brownie', 
-      price: 9.50, 
-      category: 'cookies-minicakes',
-      description: 'Fudgy chocolate brownie square',
-      image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400&q=80'
-    },
-    { 
-      id: 17, 
-      name: 'Macarons Assorted', 
-      price: 15.00, 
-      category: 'cookies-minicakes',
-      description: 'French macarons in various flavors (5 pcs)',
-      image: 'https://images.unsplash.com/photo-1571506165871-ee72a35bc9d4?w=400&q=80'
-    },
-    { 
-      id: 18, 
-      name: 'Blueberry Muffin', 
-      price: 6.50, 
-      category: 'cookies-minicakes',
-      description: 'Fresh blueberries baked into soft muffin',
-      image: 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400&q=80'
-    },
-
-    // ===== BEVERAGES =====
-    { 
-      id: 19, 
-      name: 'Espresso', 
-      price: 3.50, 
-      category: 'beverages',
-      description: 'Rich Italian espresso shot',
-      image: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&q=80'
-    },
-    { 
-      id: 20, 
-      name: 'Cappuccino', 
-      price: 4.50, 
-      category: 'beverages',
-      description: 'Espresso with steamed milk foam',
-      image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&q=80'
-    },
-    { 
-      id: 21, 
-      name: 'Caramel Latte', 
-      price: 5.00, 
-      category: 'beverages',
-      description: 'Latte with sweet caramel syrup',
-      image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&q=80'
-    },
-    { 
-      id: 22, 
-      name: 'Iced Americano', 
-      price: 4.00, 
-      category: 'beverages',
-      description: 'Chilled espresso with cold water',
-      image: 'https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?w=400&q=80'
-    },
-    { 
-      id: 23, 
-      name: 'Fresh Orange Juice', 
-      price: 5.50, 
-      category: 'beverages',
-      description: 'Freshly squeezed orange juice',
-      image: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&q=80'
-    },
-    { 
-      id: '24', 
-      name: 'Berry Smoothie', 
-      price: 6.50, 
-      category: 'beverages',
-      description: 'Mixed berries, banana and yogurt',
-      image: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=400&q=80'
+      console.log('📡 [FETCH FAV] Calling API...')
+      const favourites = await api.getFavourites({ skip: 0, limit: 100 })
+      console.log('📦 [FETCH FAV] Raw API response:', favourites)
+      
+      const ids = new Set(favourites.map(fav => fav.product.id))
+      console.log('✅ [FETCH FAV] Favourite IDs Set:', Array.from(ids))
+      
+      setFavouriteIds(ids)
+      
+    } catch (err) {
+      console.error('❌ [FETCH FAV] Error fetching favourites:', err)
+      
+      if (err.message === 'Session expired') {
+        return
+      }
+    } finally {
+      console.log('🏁 [FETCH FAV] Finished, setting favouritesLoaded = true')
+      setFavouritesLoaded(true)
     }
-  ]
+  }
 
-  if (loading) {
+  // Fetch available ingredients (Admin only)
+  const fetchAvailableIngredients = async () => {
+    try {
+      const data = await api.getIngredients()
+      setAvailableIngredients(data)
+    } catch (err) {
+      console.error('Error fetching ingredients:', err)
+    }
+  }
+
+  // Fetch products
+  const fetchProducts = async () => {
+    console.log('🛍️ [FETCH PRODUCTS] Starting to fetch products...')
+    console.log('💖 [FETCH PRODUCTS] Current favouriteIds:', Array.from(favouriteIds))
+    
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const skip = (currentPage - 1) * itemsPerPage
+      
+      const productsData = await api.getProducts({
+        skip,
+        limit: itemsPerPage,
+        category: selectedCategory === 'all' ? null : selectedCategory,
+      })
+      
+      const count = await api.getProductCount(
+        selectedCategory === 'all' ? null : selectedCategory
+      )
+      
+      let sortedProducts = [...productsData]
+      
+      switch (sortBy) {
+        case 'price-low':
+          sortedProducts.sort((a, b) => a.price - b.price)
+          break
+        case 'price-high':
+          sortedProducts.sort((a, b) => b.price - a.price)
+          break
+        case 'name-az':
+          sortedProducts.sort((a, b) => a.name.localeCompare(b.name))
+          break
+        case 'name-za':
+          sortedProducts.sort((a, b) => b.name.localeCompare(a.name))
+          break
+        default:
+          break
+      }
+      
+      setProducts(sortedProducts)
+      setTotalProducts(count)
+      setTotalPages(Math.ceil(count / itemsPerPage))
+      
+      console.log('✅ [FETCH PRODUCTS] Products loaded:', sortedProducts.length)
+      
+    } catch (err) {
+      console.error('Error fetching products:', err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch reviews của sản phẩm
+  const fetchProductReviews = async (productId) => {
+    try {
+      const reviews = await api.getProductReviews(productId)
+      console.log('📦 Reviews data:', reviews)
+      setProductReviews(reviews)
+    } catch (err) {
+      console.error('Error fetching reviews:', err)
+      setProductReviews([])
+    }
+  }
+
+  // Fetch rating của sản phẩm
+  const fetchProductRating = async (productId) => {
+    try {
+      const rating = await api.getProductRating(productId)
+      setProductRating(rating)
+    } catch (err) {
+      console.error('Error fetching rating:', err)
+      setProductRating(null)
+    }
+  }
+
+  // Kiểm tra có thể review không
+  const checkCanReview = async (productId) => {
+    try {
+      const result = await api.canReview(productId)
+      setCanReview(result)
+    } catch (err) {
+      console.error('Error checking can review:', err)
+      setCanReview(null)
+    }
+  }
+
+  // Submit review
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault()
+    
+    if (!selectedProduct) return
+    
+    setReviewLoading(true)
+    
+    try {
+      await api.createReview(
+        selectedProduct.id,
+        reviewForm.rating,
+        reviewForm.comment
+      )
+      
+      alert('✅ Review submitted! Waiting for admin approval.')
+      
+      // Reset form
+      setReviewForm({ rating: 5, comment: '' })
+      setShowReviewForm(false)
+      
+      // Refresh data
+      fetchProductReviews(selectedProduct.id)
+      fetchProductRating(selectedProduct.id)
+      checkCanReview(selectedProduct.id)
+      
+    } catch (err) {
+      console.error('Error submitting review:', err)
+      alert(err.message || 'Failed to submit review')
+    } finally {
+      setReviewLoading(false)
+    }
+  }
+
+  // Render star rating
+  const renderStars = (rating) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <span key={i} className={`star ${i < rating ? 'filled' : ''}`}>
+        ★
+      </span>
+    ))
+  }
+
+  // ===== INGREDIENT MANAGEMENT =====
+  const addIngredientToProduct = () => {
+    setSelectedIngredients([
+      ...selectedIngredients,
+      { ingredient_id: '', quantity: '' }
+    ])
+  }
+
+  const removeIngredientFromProduct = (index) => {
+    setSelectedIngredients(selectedIngredients.filter((_, i) => i !== index))
+  }
+
+  const updateIngredientInList = (index, field, value) => {
+    const updated = [...selectedIngredients]
+    updated[index][field] = value
+    setSelectedIngredients(updated)
+  }
+
+  // ====== ADMIN FORM HANDLERS ======
+  const resetAdminForm = () => {
+    setEditingProduct(null)
+    setAdminForm({
+      name: '',
+      category: 'birthday-cakes',
+      price: '',
+      description: '',
+      image: '',
+      badge: '',
+    })
+    setSelectedIngredients([])
+  }
+
+  const handleAdminFormChange = (e) => {
+    const { name, value } = e.target
+    setAdminForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleAdminSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!isAdmin) {
+      alert('You do not have admin permissions')
+      return
+    }
+
+    const payload = {
+      ...adminForm,
+      price: Number(adminForm.price),
+      badge: adminForm.badge || null,
+      ingredients: selectedIngredients
+        .filter(ing => ing.ingredient_id && ing.quantity)
+        .map(ing => ({
+          ingredient_id: ing.ingredient_id,
+          quantity: parseFloat(ing.quantity)
+        }))
+    }
+
+    if (Number.isNaN(payload.price)) {
+      alert('Price must be a number')
+      return
+    }
+
+    try {
+      if (editingProduct) {
+        await api.updateProduct(editingProduct.id, payload)
+        alert('✅ Product updated successfully')
+      } else {
+        await api.createProduct(payload)
+        alert('✅ Product added successfully')
+      }
+
+      resetAdminForm()
+      setShowAdminForm(false)
+      fetchProducts()
+      fetchCategories()
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'An error occurred')
+    }
+  }
+
+  const handleEditProduct = (product) => {
+    if (!isAdmin) return
+    setEditingProduct(product)
+    setAdminForm({
+      name: product.name,
+      category: product.category,
+      price: String(product.price),
+      description: product.description,
+      image: product.image || '',
+      badge: product.badge || '',
+    })
+    
+    setSelectedIngredients(
+      product.ingredients?.map(ing => ({
+        ingredient_id: ing.ingredient_id,
+        quantity: String(ing.quantity_needed)
+      })) || []
+    )
+    
+    setShowAdminForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleDeleteProduct = async (id) => {
+    if (!isAdmin) return
+    if (!window.confirm('Delete this product?')) return
+
+    try {
+      await api.deleteProduct(id)
+      alert('✅ Product deleted successfully')
+      fetchProducts()
+      fetchCategories()
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'Error deleting product')
+    }
+  }
+
+  const toggleFavourite = async (productId) => {
+    console.log(`🔄 [TOGGLE] Product ID: ${productId}`)
+    console.log(`💖 [TOGGLE] Before - favouriteIds:`, Array.from(favouriteIds))
+    console.log(`🔍 [TOGGLE] Is currently favourite:`, favouriteIds.has(productId))
+    
+    setFavouriteLoading(prev => ({ ...prev, [productId]: true }))
+    
+    try {
+      const isFavourite = favouriteIds.has(productId)
+      
+      if (isFavourite) {
+        console.log(`💔 [TOGGLE] Removing ${productId} from favourites...`)
+        await api.removeFromFavourites(productId)
+        setFavouriteIds(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(productId)
+          console.log(`💔 [TOGGLE] After remove - favouriteIds:`, Array.from(newSet))
+          return newSet
+        })
+      } else {
+        console.log(`❤️ [TOGGLE] Adding ${productId} to favourites...`)
+        await api.addToFavourites(productId)
+        setFavouriteIds(prev => {
+          const newSet = new Set(prev).add(productId)
+          console.log(`❤️ [TOGGLE] After add - favouriteIds:`, Array.from(newSet))
+          return newSet
+        })
+      }
+    } catch (err) {
+      console.error('❌ [TOGGLE] Error toggling favourite:', err)
+      alert(err.message || 'Failed to update favourites')
+    } finally {
+      setFavouriteLoading(prev => ({ ...prev, [productId]: false }))
+    }
+  }
+
+  const addToCart = async (productId, e) => {
+    e.stopPropagation()
+    
+    const token = localStorage.getItem('token')
+    if (!token) {
+      alert('Please login to add items to cart')
+      return
+    }
+
+    console.log('🛒 [ADD TO CART] Product ID:', productId)
+    setCartLoading(prev => ({ ...prev, [productId]: true }))
+    
+    try {
+      await api.addToCart(productId, 1)
+      alert('✅ Product added to cart!')
+    } catch (err) {
+      console.error('❌ [ADD TO CART] Error:', err)
+      alert(err.message || 'Failed to add to cart')
+    } finally {
+      setCartLoading(prev => ({ ...prev, [productId]: false }))
+    }
+  }
+
+  const handleCategoryChange = (categoryId) => {
+    setSelectedCategory(categoryId)
+    setCurrentPage(1)
+  }
+
+  const handleSortChange = (newSort) => {
+    setSortBy(newSort)
+    setCurrentPage(1)
+  }
+
+  const handleItemsPerPageChange = (newLimit) => {
+    setItemsPerPage(newLimit)
+    setCurrentPage(1)
+  }
+
+  if (loading && products.length === 0) {
+    return (
+      <div className="shop-page">
+        <Header />
+        <section className="page-banner">
+          <div className="page-banner-container">
+            <h1 className="page-title">Shop</h1>
+            <div className="breadcrumb">
+              <a href="/">🏠</a>
+              <span className="separator">»</span>
+              <span>Shop</span>
+            </div>
+          </div>
+        </section>
+        <section className="shop-section">
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Loading products...</p>
+          </div>
+        </section>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (error) {
     return (
       <div className="shop-page">
         <Header />
@@ -270,8 +503,12 @@ export default function ShopPage() {
           </div>
         </section>
         <section className="shop-section">
-          <div className="shop-container">
-            <p style={{color: 'white', textAlign: 'center', padding: '3rem'}}>Loading products...</p>
+          <div className="error-state">
+            <h2>⚠️ Error Loading Products</h2>
+            <p>{error}</p>
+            <button onClick={fetchProducts} className="retry-btn">
+              Try Again
+            </button>
           </div>
         </section>
         <Footer />
@@ -279,76 +516,10 @@ export default function ShopPage() {
     )
   }
 
-  // Đếm số sản phẩm mỗi category
-  const categoriesWithCount = categories.map(cat => ({
-    ...cat,
-    count: cat.id === 'all' 
-      ? products.length 
-      : products.filter(p => p.category === cat.id).length
-  }))
-
-  // Filter theo category
-  const filteredProducts = selectedCategory === 'all'
-    ? products
-    : products.filter(p => p.category === selectedCategory)
-
-  // Sorting
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-low':
-        return a.price - b.price
-      case 'price-high':
-        return b.price - a.price
-      case 'name-az':
-        return a.name.localeCompare(b.name)
-      case 'name-za':
-        return b.name.localeCompare(a.name)
-      default:
-        return 0
-    }
-  })
-
-  // Pagination
-  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentProducts = sortedProducts.slice(startIndex, endIndex)
-
-  // Handle category change
-  const handleCategoryChange = (categoryId) => {
-    setSelectedCategory(categoryId)
-    setCurrentPage(1) // Reset to page 1
-  }
-
-  // Check if using API data (has MongoDB ObjectId format)
-  const isApiData = products.length > 0 && typeof products[0].id === 'string' && products[0].id.length === 24
-
-  // Handle add to cart
-  const handleAddToCart = async (product) => {
-    if (!user) {
-      setShowLogin(true)
-      return
-    }
-    if (!isApiData) {
-      toast.warning('Demo mode: Please add products to database first')
-      return
-    }
-    setAddingId(product.id)
-    try {
-      await addToCart(product.id, 1)
-      toast.success(`${product.name} đã thêm vào giỏ hàng!`)
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setAddingId(null)
-    }
-  }
-
   return (
     <div className="shop-page">
       <Header />
       
-      {/* Page Banner */}
       <section className="page-banner">
         <div className="page-banner-container">
           <h1 className="page-title">Shop</h1>
@@ -360,40 +531,54 @@ export default function ShopPage() {
         </div>
       </section>
 
-      {/* Shop Section */}
       <section className="shop-section">
         <div className="shop-container">
           
-          {/* Category Filter Sidebar */}
           <aside className="shop-sidebar">
             <h3 className="sidebar-title">Categories</h3>
             <ul className="category-list">
-              {categoriesWithCount.map(cat => (
+              {categories.map(cat => (
                 <li key={cat.id}>
                   <button
                     className={`category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
                     onClick={() => handleCategoryChange(cat.id)}
                   >
                     <span className="category-name">{cat.name}</span>
-                    <span className="category-count">({cat.count})</span>
+                    <span className="category-count">({cat.product_count})</span>
                   </button>
                 </li>
               ))}
             </ul>
           </aside>
 
-          {/* Main Content */}
           <div className="shop-main">
-            {/* Toolbar */}
             <div className="shop-toolbar">
               <div className="toolbar-left">
                 <p className="results-count">
-                  Showing {startIndex + 1}–{Math.min(endIndex, sortedProducts.length)} of {sortedProducts.length} results
+                  Showing {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, totalProducts)} of {totalProducts} results
                 </p>
               </div>
 
               <div className="toolbar-right">
-                {/* View Mode */}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="admin-add-btn"
+                    onClick={() => {
+                      if (showAdminForm && editingProduct) {
+                        resetAdminForm()
+                      }
+                      setShowAdminForm((prev) => !prev)
+                    }}
+                  >
+                    {editingProduct
+                      ? 'Edit Product'
+                      : showAdminForm
+                      ? 'Close Form'
+                      : '+ Add Product'}
+                  </button>
+                )}
+
                 <div className="view-mode">
                   <button 
                     className={`view-btn ${viewMode === 2 ? 'active' : ''}`}
@@ -418,26 +603,20 @@ export default function ShopPage() {
                   </button>
                 </div>
 
-                {/* Items per page */}
                 <select 
                   className="toolbar-select"
                   value={itemsPerPage}
-                  onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value))
-                    setCurrentPage(1)
-                  }}
+                  onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
                 >
                   <option value={12}>12 Products</option>
                   <option value={24}>24 Products</option>
                   <option value={36}>36 Products</option>
-                  <option value={sortedProducts.length}>All Products</option>
                 </select>
 
-                {/* Sort */}
                 <select 
                   className="toolbar-select"
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => handleSortChange(e.target.value)}
                 >
                   <option value="default">Default Sorting</option>
                   <option value="price-low">Price: Low to High</option>
@@ -448,36 +627,515 @@ export default function ShopPage() {
               </div>
             </div>
 
-            {/* Product Grid */}
-            <div className={`product-grid cols-${viewMode}`}>
-              {currentProducts.map(product => (
-                <div key={product.id} className="product-card">
-                  <div className="product-image-wrapper">
-                    <img src={product.image} alt={product.name} className="product-image" />
-                    <button 
-                      className="add-to-cart-btn"
-                      onClick={() => handleAddToCart(product)}
-                      disabled={addingId === product.id}
+            {isAdmin && showAdminForm && (
+              <div className="admin-product-panel">
+                <h3 className="admin-panel-title">
+                  {editingProduct ? 'Edit Product' : 'Add New Product'}
+                </h3>
+                <form className="admin-product-form" onSubmit={handleAdminSubmit}>
+                  <label>
+                    Product Name
+                    <input
+                      name="name"
+                      value={adminForm.name}
+                      onChange={handleAdminFormChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Category
+                    <select
+                      name="category"
+                      value={adminForm.category}
+                      onChange={handleAdminFormChange}
                     >
-                      {addingId === product.id ? '...' : '🛒 Add to Cart'}
+                      <option value="birthday-cakes">Birthday Cakes</option>
+                      <option value="bread-savory">Bread &amp; Savory</option>
+                      <option value="cookies-minicakes">Cookies &amp; Minicakes</option>
+                      <option value="beverages">Beverages</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Price ($)
+                    <input
+                      type="number"
+                      name="price"
+                      min="0"
+                      step="0.01"
+                      value={adminForm.price}
+                      onChange={handleAdminFormChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Image URL
+                    <input
+                      name="image"
+                      value={adminForm.image}
+                      onChange={handleAdminFormChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Badge (NEW, SPECIAL, POPULAR, etc.)
+                    <input
+                      name="badge"
+                      value={adminForm.badge}
+                      onChange={handleAdminFormChange}
+                    />
+                  </label>
+
+                  <label className="admin-form-full">
+                    Description
+                    <textarea
+                      name="description"
+                      rows={3}
+                      value={adminForm.description}
+                      onChange={handleAdminFormChange}
+                      required
+                    />
+                  </label>
+
+                  <div className="admin-form-full">
+                    <label className="ingredients-section-label">
+                      Ingredients (Optional)
+                      <button
+                        type="button"
+                        className="add-ingredient-btn"
+                        onClick={addIngredientToProduct}
+                      >
+                        + Add Ingredient
+                      </button>
+                    </label>
+                    
+                    <div className="ingredients-list">
+                      {selectedIngredients.map((ing, index) => (
+                        <div key={index} className="ingredient-row">
+                          <select
+                            value={ing.ingredient_id}
+                            onChange={(e) => updateIngredientInList(index, 'ingredient_id', e.target.value)}
+                            className="ingredient-select"
+                          >
+                            <option value="">Select ingredient...</option>
+                            {availableIngredients.map(avail => (
+                              <option key={avail.id} value={avail.id}>
+                                {avail.name} ({avail.quantity} {avail.unit} available)
+                              </option>
+                            ))}
+                          </select>
+                          
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="Quantity needed"
+                            value={ing.quantity}
+                            onChange={(e) => updateIngredientInList(index, 'quantity', e.target.value)}
+                            className="ingredient-quantity"
+                          />
+                          
+                          <button
+                            type="button"
+                            className="remove-ingredient-btn"
+                            onClick={() => removeIngredientFromProduct(index)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      
+                      {selectedIngredients.length === 0 && (
+                        <p className="no-ingredients-text">No ingredients added yet</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="admin-form-actions">
+                    <button type="submit" className="admin-save-btn">
+                      {editingProduct ? 'Save Changes' : 'Add Product'}
                     </button>
+                    {editingProduct && (
+                      <button
+                        type="button"
+                        className="admin-cancel-btn"
+                        onClick={() => {
+                          resetAdminForm()
+                          setShowAdminForm(false)
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
                   </div>
-                  <div className="product-info">
-                    <h3 className="product-name">{product.name}</h3>
-                    <p className="product-price">${product.price.toFixed(2)}</p>
+                </form>
+              </div>
+            )}
+
+            <div className={`product-grid cols-${viewMode}`}>
+              {products.map(product => {
+                const isFav = favouriteIds.has(product.id)
+                
+                return (
+                  <div key={product.id} className="product-card">
+                    <button
+                      type="button"
+                      className="product-info-icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedProduct(product)
+                      }}
+                      title="View description"
+                    >
+                      i
+                    </button>
+
+                    <div className="product-image-wrapper">
+                      <img src={product.image} alt={product.name} className="product-image" />
+                      {product.badge && (
+                        <span className={`product-badge badge-${product.badge.toLowerCase()}`}>
+                          {product.badge}
+                        </span>
+                      )}
+                      
+                      <button 
+                        className={`shop-favourite-btn ${isFav ? 'is-favourite' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleFavourite(product.id)
+                        }}
+                        disabled={favouriteLoading[product.id]}
+                        title={isFav ? 'Remove from favourites' : 'Add to favourites'}
+                      >
+                        {favouriteLoading[product.id] ? '...' : '❤️'}
+                      </button>
+
+                      <button 
+                        className="shop-cart-btn"
+                        onClick={(e) => addToCart(product.id, e)}
+                        disabled={cartLoading[product.id]}
+                        title="Add to cart"
+                      >
+                        {cartLoading[product.id] ? '...' : '🛒'}
+                      </button>
+                    </div>
+                    
+                    <div className="product-info">
+                      <h3 className="product-name">{product.name}</h3>
+                      <p className="product-price">${product.price.toFixed(2)}</p>
+                    </div>
+
+                    {isAdmin && (
+                      <div className="admin-product-actions">
+                        <button
+                          type="button"
+                          className="admin-edit-btn"
+                          onClick={() => handleEditProduct(product)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-delete-btn"
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
-            {/* Empty State */}
-            {currentProducts.length === 0 && (
+            {selectedProduct && (
+  <div
+    className="product-modal-backdrop"
+    onClick={() => {
+      setSelectedProduct(null)
+      setShowReviewForm(false)
+      setReviewForm({ rating: 5, comment: '' })
+    }}
+  >
+    <div
+      className="product-modal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="product-modal-close"
+        onClick={() => {
+          setSelectedProduct(null)
+          setShowReviewForm(false)
+          setReviewForm({ rating: 5, comment: '' })
+        }}
+      >
+        ×
+      </button>
+
+      <h2 className="product-modal-title">{selectedProduct.name}</h2>
+
+      <p className="product-modal-price">
+        ${selectedProduct.price?.toFixed(2)}
+      </p>
+
+      {productRating && productRating.total_reviews > 0 && (
+        <div className="product-rating-summary">
+          <div className="rating-stars">
+            {renderStars(Math.round(productRating.avg_rating))}
+          </div>
+          <span className="rating-text">
+            {productRating.avg_rating.toFixed(1)} / 5.0 ({productRating.total_reviews} reviews)
+          </span>
+        </div>
+      )}
+
+      {selectedProduct.image && (
+        <img
+          src={selectedProduct.image}
+          alt={selectedProduct.name}
+          className="product-modal-image"
+        />
+      )}
+
+      <p className="product-modal-description">
+        {selectedProduct.description || 'No description available for this product.'}
+      </p>
+
+      {/* ===== ADD TO CART BUTTON ===== */}
+      <div className="modal-cart-section">
+        <button
+          className="modal-add-to-cart-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            addToCart(selectedProduct.id, e)
+          }}
+          disabled={cartLoading[selectedProduct.id]}
+        >
+          {cartLoading[selectedProduct.id] ? (
+            <>
+              <span className="btn-spinner"></span>
+              Adding...
+            </>
+          ) : (
+            <>
+              🛒 Buy
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* ===== INGREDIENTS SECTION - LUÔN HIỂN THỊ ===== */}
+      <div className="product-modal-ingredients">
+        <h3 className="ingredients-title">🥘 Ingredients</h3>
+        {selectedProduct.ingredients && selectedProduct.ingredients.length > 0 ? (
+          <ul className="ingredients-list-modal">
+            {selectedProduct.ingredients.map((ing, idx) => (
+              <li key={idx} className="ingredient-item">
+                <span className="ingredient-name">{ing.name}</span>
+                <span className="ingredient-quantity">
+                  {ing.quantity_needed} {ing.unit}
+                </span>
+                {!ing.is_sufficient && (
+                  <span className="ingredient-warning">
+                    ⚠️ Low stock ({ing.available_stock} {ing.unit} left)
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-field-text">Ingredients: </p>
+        )}
+      </div>
+
+      {/* ===== RECIPE SECTION - LUÔN HIỂN THỊ TẤT CẢ FIELDS ===== */}
+      <div className="product-recipe-section">
+        <h3 className="recipe-main-title">📖 Recipe Information</h3>
+
+        {/* Recipe Ingredients */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">🍳 Recipe Ingredients</h3>
+          {selectedProduct.recipe?.ingredients && selectedProduct.recipe.ingredients.length > 0 ? (
+            <ul className="recipe-ingredients-list">
+              {selectedProduct.recipe.ingredients.map((ing, idx) => (
+                <li key={idx} className="recipe-ingredient-item">
+                  <span className="ingredient-name">{ing.name}</span>
+                  <span className="ingredient-quantity">
+                    {ing.quantity} {ing.unit}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="empty-field-text">Recipe Ingredients: </p>
+          )}
+        </div>
+
+        {/* Instructions */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">📝 Instructions</h3>
+          <p className="recipe-text">
+            {selectedProduct.recipe?.instructions || 'Instructions: '}
+          </p>
+        </div>
+
+        {/* Origin */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">🌍 Origin</h3>
+          <p className="recipe-text">
+            {selectedProduct.recipe?.origin || 'Origin: '}
+          </p>
+        </div>
+
+        {/* Story */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">📖 Story</h3>
+          <p className="recipe-text">
+            {selectedProduct.recipe?.story || 'Story: '}
+          </p>
+        </div>
+
+        {/* History */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">🕰️ History</h3>
+          <p className="recipe-text">
+            {selectedProduct.recipe?.history || 'History: '}
+          </p>
+        </div>
+
+        {/* Time Info */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">⏱️ Time & Servings</h3>
+          <div className="recipe-time-info">
+            <span className="time-item">
+              ⏱️ Prep Time: {selectedProduct.recipe?.prep_time || 0} mins
+            </span>
+            <span className="time-item">
+              🍳 Cook Time: {selectedProduct.recipe?.cook_time || 0} mins
+            </span>
+            <span className="time-item">
+              🍽️ Servings: {selectedProduct.recipe?.servings || 0}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== REVIEWS SECTION ===== */}
+      <div className="product-reviews-section">
+        <h3 className="reviews-title">⭐ Customer Reviews</h3>
+
+        {canReview && canReview.can_review && (
+          <div className="review-form-container">
+            {!showReviewForm ? (
+              <button
+                type="button"
+                className="write-review-btn"
+                onClick={() => setShowReviewForm(true)}
+              >
+                ✍️ Write a Review
+              </button>
+            ) : (
+              <form className="review-form" onSubmit={handleReviewSubmit}>
+                <div className="form-group">
+                  <label>Rating</label>
+                  <div className="star-rating-input">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        key={star}
+                        type="button"
+                        className={`star-btn ${star <= reviewForm.rating ? 'active' : ''}`}
+                        onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Comment (Optional)</label>
+                  <textarea
+                    value={reviewForm.comment}
+                    onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                    placeholder="Share your experience with this product..."
+                    rows={4}
+                  />
+                </div>
+
+                <div className="form-actions">
+                  <button
+                    type="submit"
+                    className="submit-review-btn"
+                    disabled={reviewLoading}
+                  >
+                    {reviewLoading ? 'Submitting...' : 'Submit Review'}
+                  </button>
+                  <button
+                    type="button"
+                    className="cancel-review-btn"
+                    onClick={() => {
+                      setShowReviewForm(false)
+                      setReviewForm({ rating: 5, comment: '' })
+                    }}
+                    disabled={reviewLoading}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {canReview && !canReview.can_review && (
+          <div className="cannot-review-notice">
+            <p>ℹ️ {canReview.reason}</p>
+          </div>
+        )}
+
+        {productReviews.length > 0 ? (
+          <div className="reviews-list">
+            {productReviews.map(review => (
+              <div key={review.id} className="review-item">
+                <div className="review-header">
+                  <span className="review-user">
+                    {review.user_name || 'Anonymous'}
+                    {review.is_pending && (
+                      <span className="pending-badge" title="Pending admin approval">
+                        ⏳ Pending
+                      </span>
+                    )}
+                  </span>
+                  <div className="review-rating">
+                    {renderStars(review.rating)}
+                  </div>
+                  <span className="review-date">
+                    {new Date(review.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                {review.comment && (
+                  <p className="review-comment">{review.comment}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="no-reviews-text">No reviews yet. Be the first to review!</p>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+            {products.length === 0 && !loading && (
               <div className="empty-state">
                 <p>No products found in this category.</p>
               </div>
             )}
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="pagination">
                 <button 
@@ -514,7 +1172,6 @@ export default function ShopPage() {
       <SocialSidebar />
       <ChatButton />
       <Footer />
-      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
     </div>
   )
 }
