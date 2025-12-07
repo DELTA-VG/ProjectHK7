@@ -12,7 +12,7 @@ export default function AboutPage() {
   const testimonials = [
     {
       id: 1,
-      text: "Sweet Bakery luôn khiến mình mê mẩn với bánh ngọt mới nướng mỗi sáng. Cửa tiệm lúc nào cũng thơm mùi bơ, và nhân viên thì dễ thương nữa. Mỗi lần tới là một lần được nuông chiều vị giác.",
+      text: "Đức An Việt luôn khiến mình mê mẩn với bánh ngọt mới nướng mỗi sáng. Cửa tiệm lúc nào cũng thơm mùi bơ, và nhân viên thì dễ thương nữa. Mỗi lần tới là một lần được nuông chiều vị giác.",
       name: "Jane Carter",
       role: "Food Blogger",
       avatar: "https://randomuser.me/api/portraits/women/44.jpg"
@@ -33,7 +33,7 @@ export default function AboutPage() {
     },
     {
       id: 4,
-      text: "Không gian ấm cúng + bánh chất lượng = combo hoàn hảo của Sweet Bakery. Tôi đưa khách hàng tới đây vì vừa tiện làm việc, vừa tận hưởng đồ ăn ngon.",
+      text: "Không gian ấm cúng + bánh chất lượng = combo hoàn hảo của Đức An Việt. Tôi đưa khách hàng tới đây vì vừa tiện làm việc, vừa tận hưởng đồ ăn ngon.",
       name: "Michael Brown",
       role: "Entrepreneur",
       avatar: "https://randomuser.me/api/portraits/men/52.jpg"
@@ -105,7 +105,7 @@ export default function AboutPage() {
               Our <span className="highlight">Bakery Story</span>
             </h2>
             <p className="history-text">
-              Khởi nguồn từ một tiệm bánh nhỏ vào năm 1998 giữa lòng Hà Nội, Sweet Bakery đã mở rộng thành chuỗi bánh ngọt tinh tế, nơi kết hợp giữa truyền thống làm bánh Âu và nguyên liệu vùng ven. Mỗi ổ bánh, từng lát pastry đều được tạo nên bởi thợ cả tận tâm, cam kết giữ đúng hương vị nguyên bản dù đã lan rộng ra hơn 50 cửa hàng trên toàn quốc.
+              Khởi nguồn từ một tiệm bánh nhỏ vào năm 1998 giữa lòng Hà Nội, Đức An Việt đã mở rộng thành chuỗi bánh ngọt tinh tế, nơi kết hợp giữa truyền thống làm bánh Âu và nguyên liệu vùng ven. Mỗi ổ bánh, từng lát pastry đều được tạo nên bởi thợ cả tận tâm, cam kết giữ đúng hương vị nguyên bản dù đã lan rộng ra hơn 50 cửa hàng trên toàn quốc.
             </p>
           </div>
           <div className="history-image">
@@ -153,7 +153,7 @@ export default function AboutPage() {
               <span className="highlight">Enjoy</span> Fresh Bakes & <span className="highlight">Sweet Moments</span>
             </h2>
             <p className="enjoy-text">
-              Tại Sweet Bakery, mỗi sản phẩm đều được làm với nguyên liệu sạch, quá trình lên men thủ công và trang trí tinh tế. Chúng tôi biến những khoảnh khắc nhỏ thành kỷ niệm ngọt ngào cho bạn, từ những ly cà phê sáng tới tiệc cưới hoành tráng.
+              Tại Đức An Việt, mỗi sản phẩm đều được làm với nguyên liệu sạch, quá trình lên men thủ công và trang trí tinh tế. Chúng tôi biến những khoảnh khắc nhỏ thành kỷ niệm ngọt ngào cho bạn, từ những ly cà phê sáng tới tiệc cưới hoành tráng.
             </p>
           </div>
         </div>

@@ -177,7 +177,7 @@ export default function NotificationsPage() {
                       <div className="answer-section">
                         <div className="section-label">
                           <span className="label-icon">💬</span>
-                          Phản hồi từ Sweet Bakery:
+                          Phản hồi từ Đức An Việt:
                         </div>
                         <div className="answer-box">
                           <p>{item.answer}</p>

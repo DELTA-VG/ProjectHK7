@@ -55,7 +55,7 @@ export default function Header() {
       <div className="header-container">
         <Link to="/" className="logo">
           <span className="logo-icon">🍰</span>
-          <span className="logo-text">Sweet Bakery</span>
+          <span className="logo-text">Đức An Việt</span>
         </Link>
         
         <nav className="nav">

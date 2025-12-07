@@ -210,3 +210,69 @@
     flex-direction: column;
   }
 }
+
+/* Payment Pending Section */
+.payment-pending-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff3e0;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.pending-note {
+  color: #e65100;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.btn-pay-now {
+  padding: 12px 24px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-pay-now:hover {
+  background: #45a049;
+}
+
+.btn-pay-now:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.payment-qr-section {
+  margin-top: 1rem;
+}
+
+.payment-qr-image {
+  display: block;
+  margin: 1rem auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.btn-payment-link {
+  display: inline-block;
+  padding: 10px 20px;
+  background: #1976d2;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.btn-payment-link:hover {
+  background: #1565c0;
+}
+
+.payment-amount {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  color: #333;
+}

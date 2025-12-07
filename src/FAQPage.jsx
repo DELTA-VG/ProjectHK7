@@ -29,7 +29,7 @@ const faqs = [
   },
   {
     id: 3,
-    question: 'Bánh của Sweet Bakery có dùng nguyên liệu sạch không?',
+    question: 'Bánh của Đức An Việt có dùng nguyên liệu sạch không?',
     answer: 'Tất nhiên rồi! Chúng tôi cam kết sử dụng 100% bơ tươi, trứng gà ta, bột mì nhập khẩu và chocolate chất lượng cao. Không chất bảo quản.'
   },
   {

@@ -57,7 +57,7 @@ export default function AuthPage() {
       <div className="auth-card">
         <div className="auth-header">
           <h1>{mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}</h1>
-          <p>Sweet Bakery - trải nghiệm ngọt ngào</p>
+          <p>Đức An Việt - trải nghiệm ngọt ngào</p>
         </div>
         <form className="auth-form" onSubmit={handleSubmit}>
           <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />

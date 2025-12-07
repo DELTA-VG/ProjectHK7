@@ -86,7 +86,7 @@ export default function MenuPage() {
       
       <section className="page-banner">
         <div className="page-banner-container">
-          <h1 className="page-title">Sweet Bakery Menu</h1>
+          <h1 className="page-title">Đức An Việt Menu</h1>
           <div className="breadcrumb">
             <a href="/">🏠</a>
             <span className="separator">»</span>

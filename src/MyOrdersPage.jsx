@@ -16,6 +16,11 @@ export default function MyOrdersPage() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', orderId: null })
+  
+  // QR Payment Modal
+  const [showQRModal, setShowQRModal] = useState(false)
+  const [paymentData, setPaymentData] = useState(null)
+  const [paymentLoading, setPaymentLoading] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -92,13 +97,66 @@ export default function MyOrdersPage() {
   }
 
   const statusLabels = {
-    pending: 'Pending',
-    paid: 'Paid',
-    confirmed: 'Confirmed',
-    shipping: 'Shipping',
-    delivered: 'Delivered',
-    cancelled: 'Cancelled'
+    pending: 'Chờ thanh toán',
+    paid: 'Đã thanh toán',
+    confirmed: 'Đã xác nhận',
+    shipping: 'Đang giao',
+    delivered: 'Đã giao',
+    cancelled: 'Đã hủy'
   }
+
+  const handlePayNow = async (orderId, amount) => {
+    setPaymentLoading(true)
+    try {
+      const res = await fetch(`${API_URL}/payments/payos/${orderId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        // Hiện QR Modal
+        setPaymentData({
+          order_id: orderId,
+          qr_code: data.qr_code,
+          payment_url: data.payment_url,
+          amount: data.amount || amount
+        })
+        setShowQRModal(true)
+      } else {
+        const error = await res.json()
+        toast.error(error.detail || 'Không thể tạo link thanh toán')
+      }
+    } catch (err) {
+      toast.error('Lỗi khi tạo link thanh toán')
+    } finally {
+      setPaymentLoading(false)
+    }
+  }
+  
+  // Poll payment status khi QR modal mở
+  useEffect(() => {
+    let interval
+    if (showQRModal && paymentData?.order_id) {
+      interval = setInterval(async () => {
+        try {
+          const res = await fetch(`${API_URL}/payments/payos/check/${paymentData.order_id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          const data = await res.json()
+          if (data.payment_status === 'paid' || data.payos_status === 'PAID') {
+            clearInterval(interval)
+            setShowQRModal(false)
+            toast.success('Thanh toán thành công!')
+            fetchOrders()
+          }
+        } catch (err) {
+          console.error('Error checking payment:', err)
+        }
+      }, 3000)
+    }
+    return () => clearInterval(interval)
+  }, [showQRModal, paymentData, token])
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -172,15 +230,27 @@ export default function MyOrdersPage() {
                       <strong>${order.total_amount.toFixed(2)}</strong>
                     </div>
                     <div className="order-actions">
-                      <Link to={`/order-success/${order.id}`} className="btn-view">View Details</Link>
+                      <Link to={`/order-success/${order.id}`} className="btn-view">Chi tiết</Link>
+                      
+                      {/* Nút thanh toán cho order pending + payos */}
+                      {order.status === 'pending' && order.payment_method === 'payos' && (
+                        <button 
+                          className="btn-pay" 
+                          onClick={() => handlePayNow(order.id, order.total_amount)}
+                          disabled={paymentLoading}
+                        >
+                          {paymentLoading ? '...' : '💳 Thanh toán'}
+                        </button>
+                      )}
+                      
                       {(order.status === 'pending' || order.status === 'paid') && (
                         <button className="btn-cancel" onClick={() => openCancelModal(order.id)}>
-                          Cancel Order
+                          Hủy đơn
                         </button>
                       )}
                       {order.status === 'cancelled' && (
                         <button className="btn-delete" onClick={() => openDeleteModal(order.id)}>
-                          Delete
+                          Xóa
                         </button>
                       )}
                     </div>
@@ -206,6 +276,60 @@ export default function MyOrdersPage() {
         onConfirm={handleConfirm}
         onCancel={closeModal}
       />
+
+      {/* QR Payment Modal */}
+      {showQRModal && paymentData && (
+        <div className="qr-modal-overlay">
+          <div className="qr-modal">
+            <button className="qr-modal-close" onClick={() => setShowQRModal(false)}>×</button>
+            
+            <h2>Quét mã QR để thanh toán</h2>
+            <p className="qr-amount">Số tiền: <strong>${paymentData.amount?.toFixed(2)}</strong></p>
+            
+            <div className="qr-code-container">
+              {paymentData.qr_code?.startsWith('http') ? (
+                <img 
+                  src={paymentData.qr_code} 
+                  alt="Payment QR Code"
+                  className="qr-code-image"
+                />
+              ) : (
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(paymentData.qr_code)}`} 
+                  alt="Payment QR Code"
+                  className="qr-code-image"
+                />
+              )}
+            </div>
+            
+            <p className="qr-instruction">
+              Mở app ngân hàng và quét mã QR để hoàn tất thanh toán
+            </p>
+            
+            <div className="qr-status">
+              <span className="status-dot"></span>
+              Đang chờ thanh toán...
+            </div>
+            
+            <div className="qr-actions">
+              <a 
+                href={paymentData.payment_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn-open-payment"
+              >
+                Mở trang thanh toán →
+              </a>
+              <button 
+                className="btn-cancel-payment"
+                onClick={() => setShowQRModal(false)}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

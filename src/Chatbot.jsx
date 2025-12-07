@@ -5,7 +5,7 @@ import './Chatbot.css'
 
 const DEFAULT_MESSAGE = {
   role: 'assistant',
-  content: 'Xin chào! Sweet Bakery xin phục vụ quý khách. Tôi có thể giúp gì cho bạn?',
+  content: 'Xin chào! Đức An Việt xin phục vụ quý khách. Tôi có thể giúp gì cho bạn?',
   timestamp: new Date().toISOString()
 }
 
@@ -230,7 +230,7 @@ export default function Chatbot() {
             <div className="chatbot-header-info">
               <div className="chatbot-avatar">🍰</div>
               <div>
-                <h3>Sweet Bakery</h3>
+                <h3>Đức An Việt</h3>
                 <span className="chatbot-status">● Online</span>
               </div>
             </div>

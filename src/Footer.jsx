@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="footer-column footer-brand">
           <div className="footer-logo">
             <div className="logo-icon">🍰</div>
-            <span className="logo-text">Sweet Bakery</span>
+            <span className="logo-text">Đức An Việt</span>
           </div>
 
           <div className="footer-contact">
@@ -70,7 +70,7 @@ export default function Footer() {
             allowFullScreen=""
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            title="Sweet Bakery Location"
+            title="Đức An Việt Location"
           ></iframe>
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function Footer() {
       {/* Copyright Bar */}
       <div className="footer-bottom">
         <div className="footer-bottom-container">
-          <p>© 2025 Sweet Bakery. All rights reserved.</p>
+          <p>© 2025 Đức An Việt. All rights reserved.</p>
           <div className="footer-links">
             <a href="/privacy">Chính sách bảo mật</a>
             <a href="/terms">Điều khoản sử dụng</a>

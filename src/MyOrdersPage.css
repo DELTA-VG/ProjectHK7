@@ -213,6 +213,21 @@
   background: #a00;
 }
 
+.btn-pay {
+  padding: 8px 16px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.btn-pay:hover {
+  background: #45a049;
+}
+
 .btn-primary {
   display: inline-block;
   padding: 12px 30px;
@@ -239,8 +254,154 @@
     width: 100%;
   }
   
-  .btn-view, .btn-cancel, .btn-delete {
+  .btn-view, .btn-cancel, .btn-delete, .btn-pay {
     flex: 1;
     text-align: center;
   }
+}
+
+
+/* QR Payment Modal */
+.qr-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.qr-modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.qr-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #999;
+}
+
+.qr-modal-close:hover {
+  color: #333;
+}
+
+.qr-modal h2 {
+  margin: 0 0 0.5rem;
+  color: #333;
+}
+
+.qr-amount {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.qr-amount strong {
+  color: #d4a574;
+  font-size: 1.3rem;
+}
+
+.qr-code-container {
+  background: #f8f8f8;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.qr-code-image {
+  width: 220px;
+  height: 220px;
+  border-radius: 8px;
+}
+
+.qr-instruction {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.qr-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: #fff3e0;
+  border-radius: 8px;
+  color: #e65100;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: #ff9800;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.qr-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-open-payment {
+  display: block;
+  padding: 12px;
+  background: #d4a574;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.btn-open-payment:hover {
+  background: #c49464;
+}
+
+.btn-cancel-payment {
+  padding: 10px;
+  background: #f5f5f5;
+  color: #666;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-cancel-payment:hover {
+  background: #eee;
 }
