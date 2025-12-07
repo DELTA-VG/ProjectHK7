@@ -96,27 +96,45 @@ class ProductModel:
             return None
 
         ingredient_details = []
-        if db is not None and product.get("ingredients"):
-            for ing_usage in product["ingredients"]:
-                # Hỗ trợ cả string và ObjectId
-                ing_id = ing_usage["ingredient_id"]
-                if isinstance(ing_id, str):
-                    ing_id = ObjectId(ing_id)
-                
-                ingredient = db.ingredients.find_one({"_id": ing_id})
+        avg_rating = 0
+        review_count = 0
+        
+        if db is not None:
+            # Lấy ingredient details
+            if product.get("ingredients"):
+                for ing_usage in product["ingredients"]:
+                    ing_id = ing_usage["ingredient_id"]
+                    if isinstance(ing_id, str):
+                        ing_id = ObjectId(ing_id)
+                    
+                    ingredient = db.ingredients.find_one({"_id": ing_id})
 
-                if ingredient:
-                    quantity_needed = ing_usage["quantity"]
-                    available_stock = ingredient["quantity"]
+                    if ingredient:
+                        quantity_needed = ing_usage["quantity"]
+                        available_stock = ingredient["quantity"]
 
-                    ingredient_details.append({
-                        "ingredient_id": str(ingredient["_id"]),
-                        "name": ingredient["name"],
-                        "unit": ingredient["unit"],
-                        "quantity_needed": quantity_needed,
-                        "available_stock": available_stock,
-                        "is_sufficient": available_stock >= quantity_needed
-                    })
+                        ingredient_details.append({
+                            "ingredient_id": str(ingredient["_id"]),
+                            "name": ingredient["name"],
+                            "unit": ingredient["unit"],
+                            "quantity_needed": quantity_needed,
+                            "available_stock": available_stock,
+                            "is_sufficient": available_stock >= quantity_needed
+                        })
+            
+            # Tính avg_rating và review_count từ reviews collection
+            pipeline = [
+                {"$match": {"product_id": product["_id"], "is_hidden": False}},
+                {"$group": {
+                    "_id": None,
+                    "avg_rating": {"$avg": "$rating"},
+                    "review_count": {"$sum": 1}
+                }}
+            ]
+            rating_result = list(db.reviews.aggregate(pipeline))
+            if rating_result:
+                avg_rating = round(rating_result[0]["avg_rating"], 1)
+                review_count = rating_result[0]["review_count"]
 
         return {
             "id": str(product["_id"]),
@@ -128,7 +146,6 @@ class ProductModel:
             "badge": product.get("badge"),
             "ingredients": ingredient_details,
             "is_available": product.get("is_available", True),
-            # New fields
             "ingredients_text": product.get("ingredients_text", ""),
             "prep_time": product.get("prep_time", 0),
             "cook_time": product.get("cook_time", 0),
@@ -136,8 +153,8 @@ class ProductModel:
             "origin": product.get("origin", ""),
             "story": product.get("story", ""),
             "history": product.get("history", ""),
-            "avg_rating": product.get("avg_rating", 0),
-            "review_count": product.get("review_count", 0),
+            "avg_rating": avg_rating,
+            "review_count": review_count,
             "created_at": product["created_at"],
             "updated_at": product["updated_at"]
         }

@@ -8,14 +8,14 @@ class ReviewModel:
 
     @staticmethod
     def create_review(db, review_data: dict) -> dict:
-        """Tạo review mới"""
+        """Tạo review mới - tự động hiển thị (không cần duyệt)"""
         review_doc = {
             "user_id": ObjectId(review_data["user_id"]),
             "product_id": ObjectId(review_data["product_id"]),
             "order_id": ObjectId(review_data["order_id"]),
             "rating": review_data["rating"],  # 1-5
             "comment": review_data.get("comment", ""),
-            "is_approved": False,  # Admin duyệt
+            "is_approved": True,  # Tự động approved khi user đã mua hàng
             "is_hidden": False,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
@@ -25,12 +25,9 @@ class ReviewModel:
         return review_doc
 
     @staticmethod
-    def find_by_product(db, product_id: str, only_approved: bool = True) -> List[dict]:
-        """Lấy reviews của sản phẩm"""
-        query = {"product_id": ObjectId(product_id)}
-        if only_approved:
-            query["is_approved"] = True
-            query["is_hidden"] = False
+    def find_by_product(db, product_id: str, only_approved: bool = True, user_id: str = None) -> List[dict]:
+        """Lấy reviews của sản phẩm (chỉ hiển thị reviews không bị ẩn)"""
+        query = {"product_id": ObjectId(product_id), "is_hidden": False}
         return list(db.reviews.find(query).sort("created_at", -1))
 
     @staticmethod
@@ -54,7 +51,7 @@ class ReviewModel:
 
     @staticmethod
     def hide_review(db, review_id: str) -> Optional[dict]:
-        """Ẩn review"""
+        """Ẩn review (khi có dấu hiệu sai sự thật)"""
         return db.reviews.find_one_and_update(
             {"_id": ObjectId(review_id)},
             {"$set": {"is_hidden": True, "updated_at": datetime.utcnow()}},
@@ -62,10 +59,19 @@ class ReviewModel:
         )
 
     @staticmethod
+    def unhide_review(db, review_id: str) -> Optional[dict]:
+        """Hiện lại review đã ẩn"""
+        return db.reviews.find_one_and_update(
+            {"_id": ObjectId(review_id)},
+            {"$set": {"is_hidden": False, "updated_at": datetime.utcnow()}},
+            return_document=True
+        )
+
+    @staticmethod
     def get_product_rating(db, product_id: str) -> dict:
-        """Tính rating trung bình của sản phẩm"""
+        """Tính rating trung bình của sản phẩm (chỉ tính reviews không bị ẩn)"""
         pipeline = [
-            {"$match": {"product_id": ObjectId(product_id), "is_approved": True, "is_hidden": False}},
+            {"$match": {"product_id": ObjectId(product_id), "is_hidden": False}},
             {"$group": {
                 "_id": None,
                 "avg_rating": {"$avg": "$rating"},
@@ -103,17 +109,27 @@ class ReviewModel:
         return {"can_review": True, "order_id": str(order["_id"])}
 
     @staticmethod
-    def review_to_dict(review: dict, include_user: bool = False) -> dict:
+    def review_to_dict(review: dict, db=None, include_user: bool = False) -> dict:
         if not review:
             return None
         result = {
             "id": str(review["_id"]),
             "user_id": str(review["user_id"]),
             "product_id": str(review["product_id"]),
-            "order_id": str(review["order_id"]),
+            "order_id": str(review["order_id"]) if review.get("order_id") else None,
             "rating": review["rating"],
             "comment": review.get("comment", ""),
             "is_approved": review["is_approved"],
+            "is_hidden": review.get("is_hidden", False),
             "created_at": review["created_at"]
         }
+        
+        # Lấy thông tin user nếu cần
+        if include_user and db is not None:
+            user = db.users.find_one({"_id": review["user_id"]})
+            if user:
+                result["user_name"] = user.get("full_name") or user.get("email", "Anonymous")
+            else:
+                result["user_name"] = "Anonymous"
+        
         return result

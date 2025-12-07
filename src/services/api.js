@@ -1494,13 +1494,16 @@ async getAllReviews() {
     }
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      // Nếu lỗi, trả về array rỗng thay vì throw
+      console.warn('getAllReviews failed, returning empty array')
+      return []
     }
     
-    return await response.json()
+    const data = await response.json()
+    return Array.isArray(data) ? data : []
   } catch (error) {
     console.error('Error fetching all reviews:', error)
-    throw error
+    return [] // Trả về array rỗng thay vì throw
   }
 }
 
@@ -1564,6 +1567,38 @@ async hideReview(reviewId) {
     return await response.json()
   } catch (error) {
     console.error('Error hiding review:', error)
+    throw error
+  }
+}
+
+/**
+ * Unhide review (Admin) - Hiện lại review đã ẩn
+ * @param {string} reviewId - Review ID
+ */
+async unhideReview(reviewId) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/reviews/${reviewId}/unhide`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Failed to unhide review')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error unhiding review:', error)
     throw error
   }
 }

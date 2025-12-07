@@ -504,7 +504,38 @@
   justify-content: flex-start;
 }
 
+.product-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 8px;
+}
 
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.product-rating .rating-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.product-rating .rating-stars .star {
+  font-size: 14px;
+  color: #555;
+}
+
+.product-rating .rating-stars .star.filled {
+  color: #FFD700;
+}
+
+.product-rating .rating-text {
+  font-size: 12px;
+  color: #aaa;
+}
 
 .product-price {
   font-size: 22px;
@@ -549,6 +580,11 @@
 
 .badge-healthy {
   background: #81C784;
+  color: white;
+}
+
+.badge-seasonal {
+  background: #9C27B0;
   color: white;
 }
 

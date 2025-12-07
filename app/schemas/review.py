@@ -17,7 +17,7 @@ class ReviewResponse(BaseModel):
     rating: int
     comment: Optional[str]
     is_approved: bool
-    is_pending: bool  # ← THÊM
+    is_hidden: bool = False
     created_at: datetime
     user_name: Optional[str] = None
 
@@ -31,4 +31,3 @@ class CanReviewResponse(BaseModel):
     can_review: bool
     reason: Optional[str] = None
     order_id: Optional[str] = None
-    has_reviewed: bool = False  # ← THÊM

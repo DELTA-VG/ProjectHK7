@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Header
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, status, Depends
+from typing import List
 from app.schemas.review import ReviewCreate, ReviewResponse, ProductRating, CanReviewResponse
 from app.models.review import ReviewModel
 from app.utils.dependencies import get_current_active_user, get_current_active_admin
@@ -13,10 +13,13 @@ async def create_review(
     data: ReviewCreate,
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Tạo review (User - không cần mua sản phẩm)"""
+    """
+    Tạo review (User - phải đã mua và nhận hàng)
+    Review sẽ hiển thị ngay sau khi tạo
+    """
     db = get_database()
     
-    # Kiểm tra duplicate
+    # Kiểm tra đã mua và nhận hàng chưa
     check = ReviewModel.check_can_review(db, str(current_user["_id"]), data.product_id)
     if not check["can_review"]:
         raise HTTPException(status_code=400, detail=check["reason"])
@@ -35,30 +38,13 @@ async def create_review(
 
 
 @router.get("/product/{product_id}", response_model=List[ReviewResponse])
-async def get_product_reviews(
-    product_id: str,
-    authorization: Optional[str] = Header(None)
-):
+async def get_product_reviews(product_id: str):
     """
-    Lấy reviews của sản phẩm
-    - Public: Chỉ approved reviews
-    - Logged in: Approved reviews + review của bản thân (kể cả pending)
+    Lấy reviews của sản phẩm (Public)
+    Chỉ hiển thị reviews không bị admin ẩn
     """
     db = get_database()
-    
-    # Lấy user_id nếu có token
-    user_id = None
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ")[1]
-        try:
-            from app.utils.security import decode_access_token
-            payload = decode_access_token(token)
-            user_id = payload.get("sub")
-        except:
-            pass  # Token invalid, continue as public user
-    
-    # Truyền user_id vào để lấy cả review pending của user
-    reviews = ReviewModel.find_by_product(db, product_id, only_approved=True, user_id=user_id)
+    reviews = ReviewModel.find_by_product(db, product_id)
     return [ReviewModel.review_to_dict(r, db, include_user=True) for r in reviews]
 
 
@@ -119,9 +105,22 @@ async def hide_review(
     review_id: str,
     admin: dict = Depends(get_current_active_admin)
 ):
-    """Ẩn review (Admin)"""
+    """Ẩn review (Admin) - dùng khi review có dấu hiệu sai sự thật"""
     db = get_database()
     review = ReviewModel.hide_review(db, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return ReviewModel.review_to_dict(review, db, include_user=True)
+
+
+@router.post("/{review_id}/unhide", response_model=ReviewResponse)
+async def unhide_review(
+    review_id: str,
+    admin: dict = Depends(get_current_active_admin)
+):
+    """Hiện lại review đã ẩn (Admin)"""
+    db = get_database()
+    review = ReviewModel.unhide_review(db, review_id)
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
     return ReviewModel.review_to_dict(review, db, include_user=True)

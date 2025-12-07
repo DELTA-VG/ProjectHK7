@@ -284,7 +284,7 @@ export default function ShopPage() {
         reviewForm.comment
       )
       
-      toast.success('Đánh giá đã gửi! Đang chờ admin duyệt.')
+      toast.success('Đánh giá của bạn đã được đăng!')
       
       // Reset form
       setReviewForm({ rating: 5, comment: '' })
@@ -889,7 +889,17 @@ export default function ShopPage() {
                     </div>
                     
                     <div className="product-info">
-                      <h3 className="product-name style={{ color: '#fff' }}>">{product.name}</h3>
+                      <h3 className="product-name">{product.name}</h3>
+                      {product.review_count > 0 && (
+                        <div className="product-rating">
+                          <span className="rating-stars">
+                            {renderStars(Math.round(product.avg_rating))}
+                          </span>
+                          <span className="rating-text">
+                            {product.avg_rating} ({product.review_count})
+                          </span>
+                        </div>
+                      )}
                       <p className="product-price">${product.price.toFixed(2)}</p>
                     </div>
 
@@ -1076,12 +1086,12 @@ export default function ShopPage() {
                 className="write-review-btn"
                 onClick={() => setShowReviewForm(true)}
               >
-                ✍️ Write a Review
+                ✍️ Viết đánh giá
               </button>
             ) : (
               <form className="review-form" onSubmit={handleReviewSubmit}>
                 <div className="form-group">
-                  <label>Rating</label>
+                  <label>Đánh giá</label>
                   <div className="star-rating-input">
                     {[1, 2, 3, 4, 5].map(star => (
                       <button
@@ -1097,11 +1107,11 @@ export default function ShopPage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Comment (Optional)</label>
+                  <label>Nhận xét (Tùy chọn)</label>
                   <textarea
                     value={reviewForm.comment}
                     onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
-                    placeholder="Share your experience with this product..."
+                    placeholder="Chia sẻ trải nghiệm của bạn với sản phẩm này..."
                     rows={4}
                   />
                 </div>
@@ -1112,7 +1122,7 @@ export default function ShopPage() {
                     className="submit-review-btn"
                     disabled={reviewLoading}
                   >
-                    {reviewLoading ? 'Submitting...' : 'Submit Review'}
+                    {reviewLoading ? 'Đang gửi...' : 'Gửi đánh giá'}
                   </button>
                   <button
                     type="button"
@@ -1123,7 +1133,7 @@ export default function ShopPage() {
                     }}
                     disabled={reviewLoading}
                   >
-                    Cancel
+                    Hủy
                   </button>
                 </div>
               </form>
@@ -1143,18 +1153,13 @@ export default function ShopPage() {
               <div key={review.id} className="review-item">
                 <div className="review-header">
                   <span className="review-user">
-                    {review.user_name || 'Anonymous'}
-                    {review.is_pending && (
-                      <span className="pending-badge" title="Pending admin approval">
-                        ⏳ Pending
-                      </span>
-                    )}
+                    {review.user_name || 'Ẩn danh'}
                   </span>
                   <div className="review-rating">
                     {renderStars(review.rating)}
                   </div>
                   <span className="review-date">
-                    {new Date(review.created_at).toLocaleDateString()}
+                    {new Date(review.created_at).toLocaleDateString('vi-VN')}
                   </span>
                 </div>
                 {review.comment && (
@@ -1164,7 +1169,7 @@ export default function ShopPage() {
             ))}
           </div>
         ) : (
-          <p className="no-reviews-text">No reviews yet. Be the first to review!</p>
+          <p className="no-reviews-text">Chưa có đánh giá. Hãy là người đầu tiên!</p>
         )}
       </div>
     </div>
