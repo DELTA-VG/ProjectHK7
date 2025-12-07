@@ -46,6 +46,17 @@ export default function ShopPage() {
   const [availableIngredients, setAvailableIngredients] = useState([])
   const [selectedIngredients, setSelectedIngredients] = useState([])
 
+  // ===== REVIEW STATE =====
+  const [productReviews, setProductReviews] = useState([])
+  const [productRating, setProductRating] = useState(null)
+  const [canReview, setCanReview] = useState(null)
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: ''
+  })
+  const [reviewLoading, setReviewLoading] = useState(false)
+
   const token = localStorage.getItem('token')
   const userRole = localStorage.getItem('userRole')
   const isAdmin = !!token && userRole === 'admin'
@@ -68,6 +79,15 @@ export default function ShopPage() {
       fetchProducts()
     }
   }, [currentPage, itemsPerPage, selectedCategory, sortBy, favouritesLoaded])
+
+  // ===== FETCH REVIEWS KHI MỞ MODAL =====
+  useEffect(() => {
+    if (selectedProduct) {
+      fetchProductReviews(selectedProduct.id)
+      fetchProductRating(selectedProduct.id)
+      checkCanReview(selectedProduct.id)
+    }
+  }, [selectedProduct])
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -178,6 +198,83 @@ export default function ShopPage() {
     }
   }
 
+  // Fetch reviews của sản phẩm
+  const fetchProductReviews = async (productId) => {
+    try {
+      const reviews = await api.getProductReviews(productId)
+      console.log('📦 Reviews data:', reviews)
+      setProductReviews(reviews)
+    } catch (err) {
+      console.error('Error fetching reviews:', err)
+      setProductReviews([])
+    }
+  }
+
+  // Fetch rating của sản phẩm
+  const fetchProductRating = async (productId) => {
+    try {
+      const rating = await api.getProductRating(productId)
+      setProductRating(rating)
+    } catch (err) {
+      console.error('Error fetching rating:', err)
+      setProductRating(null)
+    }
+  }
+
+  // Kiểm tra có thể review không
+  const checkCanReview = async (productId) => {
+    try {
+      const result = await api.canReview(productId)
+      setCanReview(result)
+    } catch (err) {
+      console.error('Error checking can review:', err)
+      setCanReview(null)
+    }
+  }
+
+  // Submit review
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault()
+    
+    if (!selectedProduct) return
+    
+    setReviewLoading(true)
+    
+    try {
+      await api.createReview(
+        selectedProduct.id,
+        reviewForm.rating,
+        reviewForm.comment
+      )
+      
+      alert('✅ Review submitted! Waiting for admin approval.')
+      
+      // Reset form
+      setReviewForm({ rating: 5, comment: '' })
+      setShowReviewForm(false)
+      
+      // Refresh data
+      fetchProductReviews(selectedProduct.id)
+      fetchProductRating(selectedProduct.id)
+      checkCanReview(selectedProduct.id)
+      
+    } catch (err) {
+      console.error('Error submitting review:', err)
+      alert(err.message || 'Failed to submit review')
+    } finally {
+      setReviewLoading(false)
+    }
+  }
+
+  // Render star rating
+  const renderStars = (rating) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <span key={i} className={`star ${i < rating ? 'filled' : ''}`}>
+        ★
+      </span>
+    ))
+  }
+
   // ===== INGREDIENT MANAGEMENT =====
   const addIngredientToProduct = () => {
     setSelectedIngredients([
@@ -271,7 +368,6 @@ export default function ShopPage() {
       badge: product.badge || '',
     })
     
-    // Load ingredients của product
     setSelectedIngredients(
       product.ingredients?.map(ing => ({
         ingredient_id: ing.ingredient_id,
@@ -298,7 +394,6 @@ export default function ShopPage() {
     }
   }
 
-  // Toggle favourite
   const toggleFavourite = async (productId) => {
     console.log(`🔄 [TOGGLE] Product ID: ${productId}`)
     console.log(`💖 [TOGGLE] Before - favouriteIds:`, Array.from(favouriteIds))
@@ -335,7 +430,6 @@ export default function ShopPage() {
     }
   }
 
-  // Add to cart
   const addToCart = async (productId, e) => {
     e.stopPropagation()
     
@@ -359,25 +453,21 @@ export default function ShopPage() {
     }
   }
 
-  // Handle category change
   const handleCategoryChange = (categoryId) => {
     setSelectedCategory(categoryId)
     setCurrentPage(1)
   }
 
-  // Handle sort change
   const handleSortChange = (newSort) => {
     setSortBy(newSort)
     setCurrentPage(1)
   }
 
-  // Handle items per page change
   const handleItemsPerPageChange = (newLimit) => {
     setItemsPerPage(newLimit)
     setCurrentPage(1)
   }
 
-  // ===== LOADING STATE =====
   if (loading && products.length === 0) {
     return (
       <div className="shop-page">
@@ -403,7 +493,6 @@ export default function ShopPage() {
     )
   }
 
-  // ===== ERROR STATE =====
   if (error) {
     return (
       <div className="shop-page">
@@ -427,7 +516,6 @@ export default function ShopPage() {
     )
   }
 
-  // ===== MAIN RENDER =====
   return (
     <div className="shop-page">
       <Header />
@@ -446,7 +534,6 @@ export default function ShopPage() {
       <section className="shop-section">
         <div className="shop-container">
           
-          {/* Sidebar */}
           <aside className="shop-sidebar">
             <h3 className="sidebar-title">Categories</h3>
             <ul className="category-list">
@@ -464,9 +551,7 @@ export default function ShopPage() {
             </ul>
           </aside>
 
-          {/* Main Content */}
           <div className="shop-main">
-            {/* Toolbar */}
             <div className="shop-toolbar">
               <div className="toolbar-left">
                 <p className="results-count">
@@ -475,7 +560,6 @@ export default function ShopPage() {
               </div>
 
               <div className="toolbar-right">
-                {/* Admin Add Button */}
                 {isAdmin && (
                   <button
                     type="button"
@@ -495,7 +579,6 @@ export default function ShopPage() {
                   </button>
                 )}
 
-                {/* View Mode */}
                 <div className="view-mode">
                   <button 
                     className={`view-btn ${viewMode === 2 ? 'active' : ''}`}
@@ -520,7 +603,6 @@ export default function ShopPage() {
                   </button>
                 </div>
 
-                {/* Items per page */}
                 <select 
                   className="toolbar-select"
                   value={itemsPerPage}
@@ -531,7 +613,6 @@ export default function ShopPage() {
                   <option value={36}>36 Products</option>
                 </select>
 
-                {/* Sort */}
                 <select 
                   className="toolbar-select"
                   value={sortBy}
@@ -546,7 +627,6 @@ export default function ShopPage() {
               </div>
             </div>
 
-            {/* ===== ADMIN FORM (ADD / EDIT) ===== */}
             {isAdmin && showAdminForm && (
               <div className="admin-product-panel">
                 <h3 className="admin-panel-title">
@@ -620,7 +700,6 @@ export default function ShopPage() {
                     />
                   </label>
 
-                  {/* ===== INGREDIENTS SECTION ===== */}
                   <div className="admin-form-full">
                     <label className="ingredients-section-label">
                       Ingredients (Optional)
@@ -696,14 +775,12 @@ export default function ShopPage() {
               </div>
             )}
 
-            {/* Product Grid */}
             <div className={`product-grid cols-${viewMode}`}>
               {products.map(product => {
                 const isFav = favouriteIds.has(product.id)
                 
                 return (
                   <div key={product.id} className="product-card">
-                    {/* Info Icon - Top Left */}
                     <button
                       type="button"
                       className="product-info-icon"
@@ -724,7 +801,6 @@ export default function ShopPage() {
                         </span>
                       )}
                       
-                      {/* Favourite Button - Top Left on image */}
                       <button 
                         className={`shop-favourite-btn ${isFav ? 'is-favourite' : ''}`}
                         onClick={(e) => {
@@ -737,7 +813,6 @@ export default function ShopPage() {
                         {favouriteLoading[product.id] ? '...' : '❤️'}
                       </button>
 
-                      {/* Cart Button - Bottom Left on image */}
                       <button 
                         className="shop-cart-btn"
                         onClick={(e) => addToCart(product.id, e)}
@@ -753,7 +828,6 @@ export default function ShopPage() {
                       <p className="product-price">${product.price.toFixed(2)}</p>
                     </div>
 
-                    {/* Admin Actions */}
                     {isAdmin && (
                       <div className="admin-product-actions">
                         <button
@@ -777,150 +851,291 @@ export default function ShopPage() {
               })}
             </div>
 
-            {/* ===== MODAL - Product Detail with Recipe ===== */}
             {selectedProduct && (
-              <div
-                className="product-modal-backdrop"
-                onClick={() => setSelectedProduct(null)}
+  <div
+    className="product-modal-backdrop"
+    onClick={() => {
+      setSelectedProduct(null)
+      setShowReviewForm(false)
+      setReviewForm({ rating: 5, comment: '' })
+    }}
+  >
+    <div
+      className="product-modal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="product-modal-close"
+        onClick={() => {
+          setSelectedProduct(null)
+          setShowReviewForm(false)
+          setReviewForm({ rating: 5, comment: '' })
+        }}
+      >
+        ×
+      </button>
+
+      <h2 className="product-modal-title">{selectedProduct.name}</h2>
+
+      <p className="product-modal-price">
+        ${selectedProduct.price?.toFixed(2)}
+      </p>
+
+      {productRating && productRating.total_reviews > 0 && (
+        <div className="product-rating-summary">
+          <div className="rating-stars">
+            {renderStars(Math.round(productRating.avg_rating))}
+          </div>
+          <span className="rating-text">
+            {productRating.avg_rating.toFixed(1)} / 5.0 ({productRating.total_reviews} reviews)
+          </span>
+        </div>
+      )}
+
+      {selectedProduct.image && (
+        <img
+          src={selectedProduct.image}
+          alt={selectedProduct.name}
+          className="product-modal-image"
+        />
+      )}
+
+      <p className="product-modal-description">
+        {selectedProduct.description || 'No description available for this product.'}
+      </p>
+
+      {/* ===== ADD TO CART BUTTON ===== */}
+      <div className="modal-cart-section">
+        <button
+          className="modal-add-to-cart-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            addToCart(selectedProduct.id, e)
+          }}
+          disabled={cartLoading[selectedProduct.id]}
+        >
+          {cartLoading[selectedProduct.id] ? (
+            <>
+              <span className="btn-spinner"></span>
+              Adding...
+            </>
+          ) : (
+            <>
+              🛒 Buy
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* ===== INGREDIENTS SECTION - LUÔN HIỂN THỊ ===== */}
+      <div className="product-modal-ingredients">
+        <h3 className="ingredients-title">🥘 Ingredients</h3>
+        {selectedProduct.ingredients && selectedProduct.ingredients.length > 0 ? (
+          <ul className="ingredients-list-modal">
+            {selectedProduct.ingredients.map((ing, idx) => (
+              <li key={idx} className="ingredient-item">
+                <span className="ingredient-name">{ing.name}</span>
+                <span className="ingredient-quantity">
+                  {ing.quantity_needed} {ing.unit}
+                </span>
+                {!ing.is_sufficient && (
+                  <span className="ingredient-warning">
+                    ⚠️ Low stock ({ing.available_stock} {ing.unit} left)
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-field-text">Ingredients: </p>
+        )}
+      </div>
+
+      {/* ===== RECIPE SECTION - LUÔN HIỂN THỊ TẤT CẢ FIELDS ===== */}
+      <div className="product-recipe-section">
+        <h3 className="recipe-main-title">📖 Recipe Information</h3>
+
+        {/* Recipe Ingredients */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">🍳 Recipe Ingredients</h3>
+          {selectedProduct.recipe?.ingredients && selectedProduct.recipe.ingredients.length > 0 ? (
+            <ul className="recipe-ingredients-list">
+              {selectedProduct.recipe.ingredients.map((ing, idx) => (
+                <li key={idx} className="recipe-ingredient-item">
+                  <span className="ingredient-name">{ing.name}</span>
+                  <span className="ingredient-quantity">
+                    {ing.quantity} {ing.unit}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="empty-field-text">Recipe Ingredients: </p>
+          )}
+        </div>
+
+        {/* Instructions */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">📝 Instructions</h3>
+          <p className="recipe-text">
+            {selectedProduct.recipe?.instructions || 'Instructions: '}
+          </p>
+        </div>
+
+        {/* Origin */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">🌍 Origin</h3>
+          <p className="recipe-text">
+            {selectedProduct.recipe?.origin || 'Origin: '}
+          </p>
+        </div>
+
+        {/* Story */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">📖 Story</h3>
+          <p className="recipe-text">
+            {selectedProduct.recipe?.story || 'Story: '}
+          </p>
+        </div>
+
+        {/* History */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">🕰️ History</h3>
+          <p className="recipe-text">
+            {selectedProduct.recipe?.history || 'History: '}
+          </p>
+        </div>
+
+        {/* Time Info */}
+        <div className="recipe-subsection">
+          <h3 className="recipe-subtitle">⏱️ Time & Servings</h3>
+          <div className="recipe-time-info">
+            <span className="time-item">
+              ⏱️ Prep Time: {selectedProduct.recipe?.prep_time || 0} mins
+            </span>
+            <span className="time-item">
+              🍳 Cook Time: {selectedProduct.recipe?.cook_time || 0} mins
+            </span>
+            <span className="time-item">
+              🍽️ Servings: {selectedProduct.recipe?.servings || 0}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== REVIEWS SECTION ===== */}
+      <div className="product-reviews-section">
+        <h3 className="reviews-title">⭐ Customer Reviews</h3>
+
+        {canReview && canReview.can_review && (
+          <div className="review-form-container">
+            {!showReviewForm ? (
+              <button
+                type="button"
+                className="write-review-btn"
+                onClick={() => setShowReviewForm(true)}
               >
-                <div
-                  className="product-modal"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                ✍️ Write a Review
+              </button>
+            ) : (
+              <form className="review-form" onSubmit={handleReviewSubmit}>
+                <div className="form-group">
+                  <label>Rating</label>
+                  <div className="star-rating-input">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        key={star}
+                        type="button"
+                        className={`star-btn ${star <= reviewForm.rating ? 'active' : ''}`}
+                        onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Comment (Optional)</label>
+                  <textarea
+                    value={reviewForm.comment}
+                    onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                    placeholder="Share your experience with this product..."
+                    rows={4}
+                  />
+                </div>
+
+                <div className="form-actions">
+                  <button
+                    type="submit"
+                    className="submit-review-btn"
+                    disabled={reviewLoading}
+                  >
+                    {reviewLoading ? 'Submitting...' : 'Submit Review'}
+                  </button>
                   <button
                     type="button"
-                    className="product-modal-close"
-                    onClick={() => setSelectedProduct(null)}
+                    className="cancel-review-btn"
+                    onClick={() => {
+                      setShowReviewForm(false)
+                      setReviewForm({ rating: 5, comment: '' })
+                    }}
+                    disabled={reviewLoading}
                   >
-                    ×
+                    Cancel
                   </button>
-
-                  <h2 className="product-modal-title">{selectedProduct.name}</h2>
-
-                  <p className="product-modal-price">
-                    ${selectedProduct.price?.toFixed(2)}
-                  </p>
-
-                  {selectedProduct.image && (
-                    <img
-                      src={selectedProduct.image}
-                      alt={selectedProduct.name}
-                      className="product-modal-image"
-                    />
-                  )}
-
-                  <p className="product-modal-description">
-                    {selectedProduct.description || 'No description available for this product.'}
-                  </p>
-
-                  {/* ===== HIỂN THỊ INGREDIENTS ===== */}
-                  {selectedProduct.ingredients && selectedProduct.ingredients.length > 0 && (
-                    <div className="product-modal-ingredients">
-                      <h3 className="ingredients-title">🥘 Ingredients</h3>
-                      <ul className="ingredients-list-modal">
-                        {selectedProduct.ingredients.map((ing, idx) => (
-                          <li key={idx} className="ingredient-item">
-                            <span className="ingredient-name">{ing.name}</span>
-                            <span className="ingredient-quantity">
-                              {ing.quantity_needed} {ing.unit}
-                            </span>
-                            {!ing.is_sufficient && (
-                              <span className="ingredient-warning">
-                                ⚠️ Low stock ({ing.available_stock} {ing.unit} left)
-                              </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* ===== HIỂN THỊ RECIPE (nếu có) ===== */}
-                  {selectedProduct.recipe && (
-                    <div className="product-recipe-section">
-                      {/* Recipe Ingredients */}
-                      {selectedProduct.recipe.ingredients && selectedProduct.recipe.ingredients.length > 0 && (
-                        <div className="recipe-subsection">
-                          <h3 className="recipe-subtitle">🍳 Recipe Ingredients</h3>
-                          <ul className="recipe-ingredients-list">
-                            {selectedProduct.recipe.ingredients.map((ing, idx) => (
-                              <li key={idx} className="recipe-ingredient-item">
-                                <span className="ingredient-name">{ing.name}</span>
-                                <span className="ingredient-quantity">
-                                  {ing.quantity} {ing.unit}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Instructions */}
-                      {selectedProduct.recipe.instructions && (
-                        <div className="recipe-subsection">
-                          <h3 className="recipe-subtitle">📝 Instructions</h3>
-                          <p className="recipe-text">{selectedProduct.recipe.instructions}</p>
-                        </div>
-                      )}
-
-                      {/* Origin */}
-                      {selectedProduct.recipe.origin && (
-                        <div className="recipe-subsection">
-                          <h3 className="recipe-subtitle">🌍 Origin</h3>
-                          <p className="recipe-text">{selectedProduct.recipe.origin}</p>
-                        </div>
-                      )}
-
-                      {/* Story */}
-                      {selectedProduct.recipe.story && (
-                        <div className="recipe-subsection">
-                          <h3 className="recipe-subtitle">📖 Story</h3>
-                          <p className="recipe-text">{selectedProduct.recipe.story}</p>
-                        </div>
-                      )}
-
-                      {/* History */}
-                      {selectedProduct.recipe.history && (
-                        <div className="recipe-subsection">
-                          <h3 className="recipe-subtitle">🕰️ History</h3>
-                          <p className="recipe-text">{selectedProduct.recipe.history}</p>
-                        </div>
-                      )}
-
-                      {/* Prep & Cook Time */}
-                      {(selectedProduct.recipe.prep_time > 0 || selectedProduct.recipe.cook_time > 0) && (
-                        <div className="recipe-time-info">
-                          {selectedProduct.recipe.prep_time > 0 && (
-                            <span className="time-item">
-                              ⏱️ Prep: {selectedProduct.recipe.prep_time} mins
-                            </span>
-                          )}
-                          {selectedProduct.recipe.cook_time > 0 && (
-                            <span className="time-item">
-                              🍳 Cook: {selectedProduct.recipe.cook_time} mins
-                            </span>
-                          )}
-                          {selectedProduct.recipe.servings > 0 && (
-                            <span className="time-item">
-                              🍽️ Serves: {selectedProduct.recipe.servings}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
-              </div>
+              </form>
             )}
+          </div>
+        )}
 
-            {/* Empty State */}
+        {canReview && !canReview.can_review && (
+          <div className="cannot-review-notice">
+            <p>ℹ️ {canReview.reason}</p>
+          </div>
+        )}
+
+        {productReviews.length > 0 ? (
+          <div className="reviews-list">
+            {productReviews.map(review => (
+              <div key={review.id} className="review-item">
+                <div className="review-header">
+                  <span className="review-user">
+                    {review.user_name || 'Anonymous'}
+                    {review.is_pending && (
+                      <span className="pending-badge" title="Pending admin approval">
+                        ⏳ Pending
+                      </span>
+                    )}
+                  </span>
+                  <div className="review-rating">
+                    {renderStars(review.rating)}
+                  </div>
+                  <span className="review-date">
+                    {new Date(review.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                {review.comment && (
+                  <p className="review-comment">{review.comment}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="no-reviews-text">No reviews yet. Be the first to review!</p>
+        )}
+      </div>
+    </div>
+  </div>
+)}
             {products.length === 0 && !loading && (
               <div className="empty-state">
                 <p>No products found in this category.</p>
               </div>
             )}
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="pagination">
                 <button 

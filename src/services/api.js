@@ -1265,7 +1265,339 @@ async deductIngredientsForProduct(productId, quantity = 1) {
     throw error
   }
 }
+// ...existing code...
 
+// ============ REVIEWS API ============
+
+/**
+ * Create review (User - must have purchased product)
+ * @param {string} productId - Product ID
+ * @param {number} rating - Rating (1-5)
+ * @param {string} comment - Review comment (optional)
+ */
+async createReview(productId, rating, comment = '') {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/reviews`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        product_id: productId,
+        rating,
+        comment
+      })
+    })
+    
+    if (response.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      if (window.location.pathname !== '/auth') {
+        alert('⚠️ Session expired. Please login again.')
+        window.location.href = '/auth'
+      }
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Failed to create review')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error creating review:', error)
+    throw error
+  }
+}
+
+/**
+ * Get reviews of a product (Public - only approved reviews)
+ * @param {string} productId - Product ID
+ */
+async getProductReviews(productId) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const headers = {
+      'Content-Type': 'application/json'
+    }
+    
+    // ← THÊM: Gửi token nếu có
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
+    const response = await fetch(`${API_URL}/reviews/product/${productId}`, {
+      method: 'GET',
+      headers
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching product reviews:', error)
+    return []
+  }
+}
+
+/**
+ * Get product rating summary (Public)
+ * @param {string} productId - Product ID
+ */
+async getProductRating(productId) {
+  try {
+    const response = await fetch(`${API_URL}/reviews/product/${productId}/rating`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching product rating:', error)
+    return { avg_rating: 0, total_reviews: 0 }
+  }
+}
+
+/**
+ * Check if user can review product (User must be logged in)
+ * @param {string} productId - Product ID
+ */
+async canReview(productId) {
+  const token = localStorage.getItem('token')
+  
+  if (!token) {
+    return { can_review: false, reason: 'Please login to review' }
+  }
+  
+  try {
+    const response = await fetch(`${API_URL}/reviews/product/${productId}/can-review`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      if (window.location.pathname !== '/auth') {
+        alert('⚠️ Session expired. Please login again.')
+        window.location.href = '/auth'
+      }
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error checking can review:', error)
+    return { can_review: false, reason: 'Error checking review status' }
+  }
+}
+
+/**
+ * Get my reviews (User)
+ */
+async getMyReviews() {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/reviews/me`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching my reviews:', error)
+    throw error
+  }
+}
+
+// ============ ADMIN REVIEW MANAGEMENT ============
+
+/**
+ * Get pending reviews (Admin)
+ */
+async getPendingReviews() {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/reviews/pending`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching pending reviews:', error)
+    throw error
+  }
+}
+
+/**
+ * Get all reviews (Admin)
+ */
+async getAllReviews() {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/reviews/all`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching all reviews:', error)
+    throw error
+  }
+}
+
+/**
+ * Approve review (Admin)
+ * @param {string} reviewId - Review ID
+ */
+async approveReview(reviewId) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/reviews/${reviewId}/approve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Failed to approve review')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error approving review:', error)
+    throw error
+  }
+}
+
+/**
+ * Hide review (Admin)
+ * @param {string} reviewId - Review ID
+ */
+async hideReview(reviewId) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/reviews/${reviewId}/hide`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Failed to hide review')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error hiding review:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete review (Admin)
+ * @param {string} reviewId - Review ID
+ */
+async deleteReview(reviewId) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/reviews/${reviewId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Failed to delete review')
+    }
+    
+    return true
+  } catch (error) {
+    console.error('Error deleting review:', error)
+    throw error
+  }
+}
 
 }
 

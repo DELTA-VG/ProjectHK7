@@ -17,6 +17,8 @@ import Chatbot from './Chatbot'  // ← THÊM IMPORT
 import AdminProductsPage from './AdminProductsPage'
 import IngredientsPage from './IngredientsPage'
 import RecipesPage from './RecipesPage'
+import AdminReviewsPage from './AdminReviewsPage' // ← THÊM
+
 
 
 import './App.css'
@@ -43,6 +45,7 @@ export default function App() {
           <Route path="/ingredients" element={<IngredientsPage />} />
           <Route path="/recipes" element={<RecipesPage />} />
           <Route element={<RequireAdmin />}>
+            <Route path="/admin/reviews" element={<AdminReviewsPage />} />
             <Route path="/admin/questions" element={<AdminQuestionsPage />} />
             <Route path="/admin/products" element={<AdminProductsPage />} />
           </Route>
