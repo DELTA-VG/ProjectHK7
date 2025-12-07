@@ -307,11 +307,56 @@ Câu hỏi của khách: {message}"""
         
         return "Xin lỗi, tôi đang gặp sự cố. Vui lòng liên hệ hotline 0901 234 567 để được hỗ trợ!"
 
+    def get_relevant_products(self, message: str) -> list:
+        """Lấy sản phẩm liên quan đến câu hỏi"""
+        db = get_database()
+        message_lower = message.lower()
+        
+        # 1. Thử detect sản phẩm cụ thể trong tin nhắn
+        detected = self.detect_products_in_message(message)
+        if detected:
+            return detected
+        
+        # 2. Nếu hỏi về giá/đắt/rẻ → trả về sản phẩm theo giá
+        if any(kw in message_lower for kw in ["đắt", "mắc", "cao nhất", "đắt nhất"]):
+            products = list(db.products.find({"is_available": True}).sort("price", -1).limit(3))
+            return [{
+                "id": str(p["_id"]),
+                "name": p["name"],
+                "price": p["price"],
+                "category": p["category"],
+                "image": p.get("image", "")
+            } for p in products]
+        
+        if any(kw in message_lower for kw in ["rẻ", "thấp nhất", "rẻ nhất", "giá tốt"]):
+            products = list(db.products.find({"is_available": True}).sort("price", 1).limit(3))
+            return [{
+                "id": str(p["_id"]),
+                "name": p["name"],
+                "price": p["price"],
+                "category": p["category"],
+                "image": p.get("image", "")
+            } for p in products]
+        
+        # 3. Nếu hỏi về sản phẩm chung → search
+        product_keywords = ["bánh", "cake", "món", "sản phẩm", "loại", "có gì", "menu"]
+        if any(kw in message_lower for kw in product_keywords):
+            products = self.search_products(message, 3)
+            return [{
+                "id": p["id"],
+                "name": p["name"],
+                "price": p["price"],
+                "category": p["category"],
+                "image": ""
+            } for p in products]
+        
+        return []
+
     async def chat(self, message: str, user_id: Optional[str] = None) -> dict:
         """Main chat function - Hybrid approach"""
         
-        # 0. Phát hiện sản phẩm trong tin nhắn
-        detected_products = self.detect_products_in_message(message)
+        # 0. Lấy sản phẩm liên quan
+        relevant_products = self.get_relevant_products(message)
         
         # 1. Check rule-based first
         intent = self.detect_intent(message)
@@ -320,7 +365,7 @@ Câu hỏi của khách: {message}"""
                 "response": self.get_rule_response(intent),
                 "intent": intent,
                 "source": "rule",
-                "products": detected_products
+                "products": relevant_products
             }
         
         # 2. Fallback to RAG
@@ -328,8 +373,8 @@ Câu hỏi của khách: {message}"""
         return {
             "response": response,
             "intent": "rag",
-            "source": "gemini",
-            "products": detected_products
+            "source": "groq",
+            "products": relevant_products
         }
 
 

@@ -1,0 +1,241 @@
+.reports-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.reports-section {
+  flex: 1;
+  padding: 3rem 0;
+  background: #faf9f7;
+}
+
+.reports-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Date Filter */
+.date-filter {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.date-filter button {
+  padding: 10px 20px;
+  border: 2px solid #d4a574;
+  background: white;
+  color: #d4a574;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.date-filter button:hover,
+.date-filter button.active {
+  background: #d4a574;
+  color: white;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.stat-card.revenue { border-left: 4px solid #4caf50; }
+.stat-card.orders { border-left: 4px solid #2196f3; }
+.stat-card.products { border-left: 4px solid #ff9800; }
+.stat-card.delivered { border-left: 4px solid #9c27b0; }
+
+/* Reports Row */
+.reports-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.report-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.report-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.report-card h3 {
+  margin: 0 0 1rem;
+  color: #333;
+  font-size: 1.1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #eee;
+}
+
+/* Status List */
+.status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #f8f8f8;
+}
+
+.status-item.pending { background: #fff3e0; }
+.status-item.paid { background: #e8f5e9; }
+.status-item.confirmed { background: #e3f2fd; }
+.status-item.shipping { background: #f3e5f5; }
+.status-item.delivered { background: #e8f5e9; }
+.status-item.cancelled { background: #ffebee; }
+
+.status-count {
+  font-weight: 700;
+  color: #333;
+}
+
+/* Top Products */
+.top-products {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.top-product-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #f8f8f8;
+  border-radius: 8px;
+}
+
+.top-product-item .rank {
+  font-weight: 700;
+  color: #d4a574;
+  min-width: 30px;
+}
+
+.top-product-item .name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.top-product-item .qty {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.top-product-item .revenue {
+  font-weight: 600;
+  color: #4caf50;
+}
+
+.no-data {
+  color: #888;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Orders Table */
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.orders-table th,
+.orders-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.orders-table th {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-badge.pending { background: #fff3e0; color: #e65100; }
+.status-badge.paid { background: #e8f5e9; color: #2e7d32; }
+.status-badge.confirmed { background: #e3f2fd; color: #1565c0; }
+.status-badge.shipping { background: #f3e5f5; color: #7b1fa2; }
+.status-badge.delivered { background: #e8f5e9; color: #1b5e20; }
+.status-badge.cancelled { background: #ffebee; color: #c62828; }
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .reports-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .date-filter {
+    flex-wrap: wrap;
+  }
+}

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Header from './Header'
 import SocialSidebar from './SocialSidebar'
 import ChatButton from './ChatButton'
@@ -8,6 +9,7 @@ import './ShopPage.css'
 import api from './services/api'
 
 export default function ShopPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const toast = useToast()
   const [viewMode, setViewMode] = useState(4)
   const [itemsPerPage, setItemsPerPage] = useState(12)
@@ -74,6 +76,28 @@ export default function ShopPage() {
     }
     initData()
   }, [isAdmin])
+
+  // ===== HANDLE PRODUCT QUERY PARAM (từ chatbot) =====
+  useEffect(() => {
+    const productId = searchParams.get('product')
+    if (productId && products.length > 0) {
+      // Tìm sản phẩm trong danh sách hiện tại
+      const product = products.find(p => p.id === productId)
+      if (product) {
+        setSelectedProduct(product)
+        // Xóa query param sau khi mở modal
+        setSearchParams({})
+      } else {
+        // Nếu không tìm thấy, fetch trực tiếp
+        api.getProduct(productId).then(p => {
+          if (p) {
+            setSelectedProduct(p)
+            setSearchParams({})
+          }
+        }).catch(console.error)
+      }
+    }
+  }, [searchParams, products])
 
   // ===== FETCH PRODUCTS SAU KHI FAVOURITES ĐÃ LOAD =====
   useEffect(() => {

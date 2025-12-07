@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import Header from './Header'
 import Footer from './Footer'
+import { useToast } from './contexts/ToastContext'
+import ConfirmModal from './ConfirmModal'
 import api from './services/api'
 import './ShopPage.css' // tái dùng style thẻ sản phẩm
 
 export default function AdminProductsPage() {
+  const toast = useToast()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, productId: null, productName: '' })
   const [form, setForm] = useState({
     name: '',
     category: 'birthday-cakes',
@@ -23,11 +27,11 @@ export default function AdminProductsPage() {
   const loadProducts = async () => {
     try {
       setLoading(true)
-      const data = await api.getProducts({ limit: 200 })
+      const data = await api.getProducts({ skip: 0, limit: 200 })
       setProducts(data)
     } catch (e) {
       console.error(e)
-      alert('Không tải được sản phẩm')
+      toast.error('Không tải được sản phẩm')
     } finally {
       setLoading(false)
     }
@@ -58,13 +62,13 @@ export default function AdminProductsPage() {
     e.preventDefault()
 
     if (!token) {
-      alert('Bạn chưa đăng nhập')
+      toast.error('Bạn chưa đăng nhập')
       return
     }
 
     const priceNumber = parseFloat(form.price)
     if (Number.isNaN(priceNumber)) {
-      alert('Giá phải là số')
+      toast.error('Giá phải là số')
       return
     }
 
@@ -81,18 +85,18 @@ export default function AdminProductsPage() {
       if (editing) {
         // UPDATE
         await api.updateProduct(editing.id, payload, token)
-        alert('Cập nhật sản phẩm thành công')
+        toast.success('Cập nhật sản phẩm thành công')
       } else {
         // CREATE
         await api.createProduct(payload, token)
-        alert('Thêm sản phẩm thành công')
+        toast.success('Thêm sản phẩm thành công')
       }
 
       resetForm()
       loadProducts()
     } catch (err) {
       console.error('Error saving product:', err)
-      alert('Lưu sản phẩm thất bại')
+      toast.error('Lưu sản phẩm thất bại')
     }
   }
 
@@ -109,21 +113,30 @@ export default function AdminProductsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Xóa sản phẩm này?')) return
+  const openDeleteModal = (product) => {
+    setConfirmModal({ isOpen: true, productId: product.id, productName: product.name })
+  }
 
+  const closeDeleteModal = () => {
+    setConfirmModal({ isOpen: false, productId: null, productName: '' })
+  }
+
+  const handleDelete = async () => {
     if (!token) {
-      alert('Bạn chưa đăng nhập')
+      toast.error('Bạn chưa đăng nhập')
+      closeDeleteModal()
       return
     }
 
     try {
-      await api.deleteProduct(id, token)
-      alert('Xóa sản phẩm thành công')
+      await api.deleteProduct(confirmModal.productId, token)
+      toast.success('Xóa sản phẩm thành công')
       loadProducts()
     } catch (err) {
       console.error('Error deleting product:', err)
-      alert('Xóa sản phẩm thất bại')
+      toast.error('Xóa sản phẩm thất bại')
+    } finally {
+      closeDeleteModal()
     }
   }
 
@@ -282,7 +295,7 @@ export default function AdminProductsPage() {
                           <button
                             type="button"
                             className="product-button danger"
-                            onClick={() => handleDelete(p.id)}
+                            onClick={() => openDeleteModal(p)}
                           >
                             Xóa
                           </button>
@@ -300,6 +313,17 @@ export default function AdminProductsPage() {
       </section>
 
       <Footer />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title="Xóa sản phẩm"
+        message={`Bạn có chắc muốn xóa "${confirmModal.productName}"?`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        type="danger"
+        onConfirm={handleDelete}
+        onCancel={closeDeleteModal}
+      />
     </div>
   )
 }

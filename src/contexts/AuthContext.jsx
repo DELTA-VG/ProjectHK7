@@ -39,6 +39,7 @@ export function AuthProvider({ children }) {
         setUser(data)
         // Cache user for next page load
         localStorage.setItem('user', JSON.stringify(data))
+        localStorage.setItem('userRole', data.role?.toLowerCase() || '')
       } else {
         logout()
       }
@@ -60,6 +61,7 @@ export function AuthProvider({ children }) {
     
     localStorage.setItem('token', data.access_token)
     localStorage.setItem('user', JSON.stringify(data.user))
+    localStorage.setItem('userRole', data.user.role?.toLowerCase() || '')
     setToken(data.access_token)
     setUser(data.user)
     return data
@@ -79,6 +81,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    localStorage.removeItem('userRole')
     setToken(null)
     setUser(null)
   }

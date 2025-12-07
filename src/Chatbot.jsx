@@ -1,22 +1,53 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from './services/api'
+import ConfirmModal from './ConfirmModal'
 import './Chatbot.css'
+
+const DEFAULT_MESSAGE = {
+  role: 'assistant',
+  content: 'Xin chào! Sweet Bakery xin phục vụ quý khách. Tôi có thể giúp gì cho bạn?',
+  timestamp: new Date().toISOString()
+}
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false)
-  const [messages, setMessages] = useState([])
+  const [messages, setMessages] = useState([DEFAULT_MESSAGE])
   const [inputMessage, setInputMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const [historyLoaded, setHistoryLoaded] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [imageLoading, setImageLoading] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const currentUserRef = useRef(localStorage.getItem('token'))
 
-  // Load chat history khi mở chatbot lần đầu
+  // Reset chat khi user thay đổi (đăng xuất/đăng nhập user khác)
   useEffect(() => {
-    if (isOpen && !historyLoaded) {
-      loadChatHistory()
+    const checkUserChange = () => {
+      const currentToken = localStorage.getItem('token')
+      if (currentToken !== currentUserRef.current) {
+        // User đã thay đổi → reset chat
+        currentUserRef.current = currentToken
+        setMessages([{...DEFAULT_MESSAGE, timestamp: new Date().toISOString()}])
+        
+        // Xóa history trên server nếu có token cũ
+        if (!currentToken) {
+          api.clearChatHistory().catch(() => {})
+        }
+      }
     }
-  }, [isOpen])
+
+    // Check mỗi khi window focus (user có thể đăng xuất ở tab khác)
+    window.addEventListener('focus', checkUserChange)
+    
+    // Check định kỳ
+    const interval = setInterval(checkUserChange, 2000)
+
+    return () => {
+      window.removeEventListener('focus', checkUserChange)
+      clearInterval(interval)
+    }
+  }, [])
 
   // Auto scroll to bottom khi có message mới
   useEffect(() => {
@@ -32,41 +63,6 @@ export default function Chatbot() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const loadChatHistory = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        setMessages([{
-          role: 'assistant',
-          content: 'Xin chào! Sweet Bakery xin phục vụ quý khách. Tôi có thể giúp gì cho bạn?',
-          timestamp: new Date().toISOString()
-        }])
-        setHistoryLoaded(true)
-        return
-      }
-
-      const history = await api.getChatHistory(10)
-      if (history && history.length > 0) {
-        setMessages(history)
-      } else {
-        setMessages([{
-          role: 'assistant',
-          content: 'Xin chào! Sweet Bakery xin phục vụ quý khách. Tôi có thể giúp gì cho bạn?',
-          timestamp: new Date().toISOString()
-        }])
-      }
-    } catch (err) {
-      console.error('Error loading chat history:', err)
-      setMessages([{
-        role: 'assistant',
-        content: 'Xin chào! Sweet Bakery xin phục vụ quý khách. Tôi có thể giúp gì cho bạn?',
-        timestamp: new Date().toISOString()
-      }])
-    } finally {
-      setHistoryLoaded(true)
-    }
   }
 
   const handleSendMessage = async (e) => {
@@ -90,6 +86,7 @@ export default function Chatbot() {
       const botMessage = {
         role: 'assistant',
         content: response.response,
+        products: response.products || [], // Sản phẩm được đề cử
         timestamp: new Date().toISOString()
       }
 
@@ -115,24 +112,91 @@ export default function Chatbot() {
   }
 
   const handleClearChat = async () => {
-    if (!confirm('Xóa toàn bộ lịch sử chat?')) return
-
-    try {
-      await api.clearChatHistory()
-      setMessages([{
-        role: 'assistant',
-        content: 'Xin chào! Sweet Bakery xin phục vụ quý khách. Tôi có thể giúp gì cho bạn?',
-        timestamp: new Date().toISOString()
-      }])
-    } catch (err) {
-      console.error('Error clearing chat:', err)
-      alert('Không thể xóa lịch sử chat')
-    }
+    setShowClearConfirm(false)
+    // Reset local state
+    setMessages([{...DEFAULT_MESSAGE, timestamp: new Date().toISOString()}])
+    // Xóa trên server (không cần await)
+    api.clearChatHistory().catch(() => {})
   }
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp)
     return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  // Handle image upload for cake recognition
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Vui lòng chọn file ảnh (jpg, png, etc.)',
+        timestamp: new Date().toISOString()
+      }])
+      return
+    }
+
+    // Show user's image message
+    const imageUrl = URL.createObjectURL(file)
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: '📷 Đang tìm bánh từ ảnh...',
+      imagePreview: imageUrl,
+      timestamp: new Date().toISOString()
+    }])
+
+    setImageLoading(true)
+
+    try {
+      // Convert to base64
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const base64 = reader.result.split(',')[1] // Remove data:image/...;base64, prefix
+        
+        const response = await fetch('/api/chatbot/camera/base64', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_base64: base64,
+            mime_type: file.type
+          })
+        })
+
+        const data = await response.json()
+
+        if (data.found && data.product) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `🎯 ${data.message}! Đây là sản phẩm bạn đang tìm:`,
+            products: [data.product],
+            timestamp: new Date().toISOString()
+          }])
+        } else {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: data.message || 'Không tìm thấy sản phẩm tương ứng trong cửa hàng. Bạn có thể mô tả thêm hoặc thử ảnh khác nhé!',
+            timestamp: new Date().toISOString()
+          }])
+        }
+      }
+      reader.readAsDataURL(file)
+    } catch (err) {
+      console.error('Error recognizing image:', err)
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Xin lỗi, không thể phân tích ảnh. Vui lòng thử lại sau.',
+        timestamp: new Date().toISOString()
+      }])
+    } finally {
+      setImageLoading(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
   }
 
   return (
@@ -145,6 +209,18 @@ export default function Chatbot() {
       >
         {isOpen ? '✕' : '💬'}
       </button>
+
+      {/* Confirm Clear Modal */}
+      <ConfirmModal
+        isOpen={showClearConfirm}
+        title="Xóa lịch sử chat"
+        message="Bạn có chắc muốn xóa toàn bộ lịch sử chat?"
+        confirmText="Xóa"
+        cancelText="Hủy"
+        type="danger"
+        onConfirm={handleClearChat}
+        onCancel={() => setShowClearConfirm(false)}
+      />
 
       {/* Chat Window */}
       {isOpen && (
@@ -160,7 +236,7 @@ export default function Chatbot() {
             </div>
             <button 
               className="chatbot-clear-btn"
-              onClick={handleClearChat}
+              onClick={() => setShowClearConfirm(true)}
               title="Xóa lịch sử chat"
             >
               🗑️
@@ -175,7 +251,41 @@ export default function Chatbot() {
                 className={`chatbot-message ${msg.role === 'user' ? 'user' : 'assistant'}`}
               >
                 <div className="message-content">
+                  {/* Image preview if user uploaded */}
+                  {msg.imagePreview && (
+                    <img 
+                      src={msg.imagePreview} 
+                      alt="Uploaded" 
+                      className="message-image-preview"
+                    />
+                  )}
                   <p>{msg.content}</p>
+                  
+                  {/* Hiển thị sản phẩm được đề cử */}
+                  {msg.products && msg.products.length > 0 && (
+                    <div className="suggested-products">
+                      {msg.products.map((product) => (
+                        <a 
+                          key={product.id}
+                          href={`/shop?product=${product.id}`}
+                          className="suggested-product"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            window.location.href = `/shop?product=${product.id}`
+                          }}
+                        >
+                          {product.image && (
+                            <img src={product.image} alt={product.name} />
+                          )}
+                          <div className="product-info">
+                            <span className="product-name">{product.name}</span>
+                            <span className="product-price">{product.price.toLocaleString()}đ</span>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  
                   <span className="message-time">{formatTime(msg.timestamp)}</span>
                 </div>
               </div>
@@ -198,6 +308,26 @@ export default function Chatbot() {
 
           {/* Input */}
           <form className="chatbot-input-form" onSubmit={handleSendMessage}>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              style={{ display: 'none' }}
+            />
+            
+            {/* Image upload button */}
+            <button
+              type="button"
+              className="chatbot-image-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading || imageLoading}
+              title="Tìm bánh bằng ảnh"
+            >
+              📷
+            </button>
+            
             <input
               ref={inputRef}
               type="text"
@@ -205,12 +335,12 @@ export default function Chatbot() {
               placeholder="Nhập tin nhắn..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              disabled={loading}
+              disabled={loading || imageLoading}
             />
             <button 
               type="submit" 
               className="chatbot-send-btn"
-              disabled={loading || !inputMessage.trim()}
+              disabled={loading || imageLoading || !inputMessage.trim()}
             >
               ➤
             </button>

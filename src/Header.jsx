@@ -109,8 +109,11 @@ export default function Header() {
                     <>
                       <div className="dropdown-divider"></div>
                       <div className="dropdown-section-title">Admin Panel</div>
-                      <Link to="/admin/products" onClick={() => setShowUserMenu(false)}>
-                        📦 Quản lý sản phẩm
+                      <Link to="/admin/reports" onClick={() => setShowUserMenu(false)}>
+                        📊 Báo cáo doanh thu
+                      </Link>
+                      <Link to="/ingredients" onClick={() => setShowUserMenu(false)}>
+                        🥣 Quản lý nguyên liệu
                       </Link>
                       <Link to="/admin/questions" onClick={() => setShowUserMenu(false)}>
                         ❓ Quản lý câu hỏi

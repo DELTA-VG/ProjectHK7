@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
-import google.generativeai as genai
+from groq import Groq
 import base64
 
 from app.utils.chatbot import chatbot_service
@@ -11,9 +11,8 @@ from app.database import get_database
 from app.config import settings
 from bson import ObjectId
 
-# Configure Gemini for image recognition
-genai.configure(api_key=settings.GEMINI_API_KEY)
-vision_model = genai.GenerativeModel('gemini-2.0-flash')
+# Configure Groq for image recognition (Llama 3.2 Vision)
+groq_client = Groq(api_key=settings.GROQ_API_KEY)
 
 router = APIRouter(prefix="/api/chatbot", tags=["Chatbot"])
 
@@ -205,13 +204,14 @@ async def recognize_cake_from_camera(file: UploadFile = File(...)):
     Nhận diện bánh từ ảnh camera (upload file)
     
     - Chụp ảnh bánh và upload
-    - AI phân tích và tìm sản phẩm tương ứng
+    - AI phân tích và tìm sản phẩm tương ứng (Groq Llama 3.2 Vision)
     - Trả về thông tin để chuyển hướng đến trang sản phẩm
     """
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File phải là ảnh")
     
     image_data = await file.read()
+    image_base64 = base64.b64encode(image_data).decode('utf-8')
     
     product_names = get_all_product_names()
     product_list = "\n".join([f"- {name}" for name in product_names])
@@ -231,13 +231,28 @@ Quy tắc:
 Phân tích ảnh và trả lời:"""
 
     try:
-        response = vision_model.generate_content([
-            prompt,
-            {"mime_type": file.content_type, "data": image_data}
-        ])
+        response = groq_client.chat.completions.create(
+            model="llama-3.2-90b-vision-preview",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{file.content_type};base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            temperature=0.3,
+            max_tokens=100
+        )
         
-        result = response.text.strip()
-        print(f"[Camera] Gemini result: {result}")
+        result = response.choices[0].message.content.strip()
+        print(f"[Camera] Groq Vision result: {result}")
         
         if result == "NOT_FOUND" or not result:
             return ImageRecognitionResponse(
@@ -269,12 +284,14 @@ Phân tích ảnh và trả lời:"""
 async def recognize_cake_base64(data: ImageRecognitionRequest):
     """
     Nhận diện bánh từ ảnh base64 (cho web/mobile camera capture)
+    Sử dụng Groq Llama 3.2 Vision
     
     - image_base64: Ảnh dạng base64 string (không có prefix data:image/...)
     - mime_type: image/jpeg, image/png, etc.
     """
+    # Validate base64
     try:
-        image_data = base64.b64decode(data.image_base64)
+        base64.b64decode(data.image_base64)
     except:
         raise HTTPException(status_code=400, detail="Base64 không hợp lệ")
     
@@ -296,13 +313,28 @@ Quy tắc:
 Phân tích ảnh và trả lời:"""
 
     try:
-        response = vision_model.generate_content([
-            prompt,
-            {"mime_type": data.mime_type, "data": image_data}
-        ])
+        response = groq_client.chat.completions.create(
+            model="llama-3.2-90b-vision-preview",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{data.mime_type};base64,{data.image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            temperature=0.3,
+            max_tokens=100
+        )
         
-        result = response.text.strip()
-        print(f"[Camera] Gemini result: {result}")
+        result = response.choices[0].message.content.strip()
+        print(f"[Camera] Groq Vision result: {result}")
         
         if result == "NOT_FOUND" or not result:
             return ImageRecognitionResponse(
@@ -326,5 +358,5 @@ Phân tích ảnh và trả lời:"""
             )
             
     except Exception as e:
-        print(f"[Camera] Error: {e}")
+        print(f"[Camera] Groq Vision Error: {e}")
         raise HTTPException(status_code=500, detail="Lỗi phân tích ảnh")

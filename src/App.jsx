@@ -17,6 +17,7 @@ import AdminProductsPage from './AdminProductsPage'
 import IngredientsPage from './IngredientsPage'
 import RecipesPage from './RecipesPage'
 import AdminReviewsPage from './AdminReviewsPage'
+import ReportsPage from './ReportsPage'
 import CheckoutPage from './CheckoutPage'
 import OrderSuccessPage from './OrderSuccessPage'
 import MyOrdersPage from './MyOrdersPage'
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="/admin/reviews" element={<AdminReviewsPage />} />
             <Route path="/admin/questions" element={<AdminQuestionsPage />} />
             <Route path="/admin/products" element={<AdminProductsPage />} />
+            <Route path="/admin/reports" element={<ReportsPage />} />
           </Route>
         </Route>
       </Routes>
