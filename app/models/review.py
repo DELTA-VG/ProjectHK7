@@ -88,15 +88,15 @@ class ReviewModel:
 
     @staticmethod
     def check_can_review(db, user_id: str, product_id: str) -> dict:
-        """Kiểm tra user có thể review sản phẩm không (đã mua & chưa review)"""
-        # Kiểm tra đã mua chưa
+        """Kiểm tra user có thể review sản phẩm không (đã thanh toán & chưa review)"""
+        # Kiểm tra đã mua và thanh toán chưa (paid, confirmed, shipping, delivered đều được)
         order = db.orders.find_one({
             "user_id": ObjectId(user_id),
-            "status": "delivered",
+            "status": {"$in": ["paid", "confirmed", "shipping", "delivered"]},
             "items.product_id": product_id
         })
         if not order:
-            return {"can_review": False, "reason": "Bạn chưa mua sản phẩm này"}
+            return {"can_review": False, "reason": "Bạn cần mua và thanh toán sản phẩm này trước"}
         
         # Kiểm tra đã review chưa
         existing = db.reviews.find_one({

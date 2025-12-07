@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Header from './Header'
 import SocialSidebar from './SocialSidebar'
 import ChatButton from './ChatButton'
 import Footer from './Footer'
+import { useToast } from './contexts/ToastContext'
 import './IngredientsPage.css'
 import api from './services/api'
 
 export default function IngredientsPage() {
+  const toast = useToast()
+  
   // State
   const [ingredients, setIngredients] = useState([])
   const [filteredIngredients, setFilteredIngredients] = useState([])
@@ -145,10 +148,10 @@ export default function IngredientsPage() {
     try {
       if (editingIngredient) {
         await api.updateIngredient(editingIngredient.id, payload)
-        alert('✅ Cập nhật nguyên liệu thành công!')
+        toast.success('Cập nhật nguyên liệu thành công!')
       } else {
         await api.createIngredient(payload)
-        alert('✅ Thêm nguyên liệu thành công!')
+        toast.success('Thêm nguyên liệu thành công!')
       }
       
       resetForm()
@@ -156,7 +159,7 @@ export default function IngredientsPage() {
       fetchIngredients()
     } catch (err) {
       console.error(err)
-      alert(err.message || 'Có lỗi xảy ra')
+      toast.error(err.message || 'Có lỗi xảy ra')
     }
   }
 
@@ -182,11 +185,11 @@ export default function IngredientsPage() {
     
     try {
       await api.deleteIngredient(id)
-      alert('✅ Xóa nguyên liệu thành công!')
+      toast.success('Xóa nguyên liệu thành công!')
       fetchIngredients()
     } catch (err) {
       console.error(err)
-      alert(err.message || 'Có lỗi xảy ra khi xóa')
+      toast.error(err.message || 'Có lỗi xảy ra khi xóa')
     }
   }
 
@@ -204,24 +207,24 @@ export default function IngredientsPage() {
     
     const quantity = parseFloat(stockForm.quantity)
     if (quantity <= 0) {
-      alert('Số lượng phải lớn hơn 0')
+      toast.warning('Số lượng phải lớn hơn 0')
       return
     }
     
     try {
       if (stockAction === 'import') {
         await api.importStock(selectedIngredient.id, quantity, stockForm.note)
-        alert('✅ Nhập kho thành công!')
+        toast.success('Nhập kho thành công!')
       } else {
         await api.exportStock(selectedIngredient.id, quantity, stockForm.note)
-        alert('✅ Xuất kho thành công!')
+        toast.success('Xuất kho thành công!')
       }
       
       setShowStockModal(false)
       fetchIngredients()
     } catch (err) {
       console.error(err)
-      alert(err.message || 'Có lỗi xảy ra')
+      toast.error(err.message || 'Có lỗi xảy ra')
     }
   }
 
@@ -236,7 +239,7 @@ export default function IngredientsPage() {
       setHistory(data)
     } catch (err) {
       console.error(err)
-      alert(err.message || 'Không thể tải lịch sử')
+      toast.error(err.message || 'Không thể tải lịch sử')
     } finally {
       setHistoryLoading(false)
     }

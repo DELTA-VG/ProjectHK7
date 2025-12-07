@@ -95,6 +95,9 @@ export default function Header() {
                   </div>
                   <div className="dropdown-divider"></div>
                   
+                  <Link to="/profile" onClick={() => setShowUserMenu(false)}>
+                    ⚙️ Tài khoản
+                  </Link>
                   <Link to="/my-orders" onClick={() => setShowUserMenu(false)}>
                     📦 Đơn hàng của tôi
                   </Link>
@@ -109,6 +112,9 @@ export default function Header() {
                     <>
                       <div className="dropdown-divider"></div>
                       <div className="dropdown-section-title">Admin Panel</div>
+                      <Link to="/admin/orders" onClick={() => setShowUserMenu(false)}>
+                        📦 Quản lý đơn hàng
+                      </Link>
                       <Link to="/admin/reports" onClick={() => setShowUserMenu(false)}>
                         📊 Báo cáo doanh thu
                       </Link>

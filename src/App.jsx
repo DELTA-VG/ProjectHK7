@@ -21,6 +21,8 @@ import ReportsPage from './ReportsPage'
 import CheckoutPage from './CheckoutPage'
 import OrderSuccessPage from './OrderSuccessPage'
 import MyOrdersPage from './MyOrdersPage'
+import ProfilePage from './ProfilePage'
+import AdminOrdersPage from './AdminOrdersPage'
 import './App.css'
 
 export default function App() {
@@ -47,11 +49,13 @@ export default function App() {
           <Route path="/my-orders" element={<MyOrdersPage />} />
           <Route path="/favourites" element={<FavouritePage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           
           {/* Admin routes */}
           <Route element={<RequireAdmin />}>
             <Route path="/admin/reviews" element={<AdminReviewsPage />} />
             <Route path="/admin/questions" element={<AdminQuestionsPage />} />
+            <Route path="/admin/orders" element={<AdminOrdersPage />} />
             <Route path="/admin/products" element={<AdminProductsPage />} />
             <Route path="/admin/reports" element={<ReportsPage />} />
           </Route>

@@ -1,11 +1,13 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Header from './Header'
 import SocialSidebar from './SocialSidebar'
 import ChatButton from './ChatButton'
 import Footer from './Footer'
+import { useToast } from './contexts/ToastContext'
 import './FAQPage.css'
 
 export default function FAQPage() {
+  const toast = useToast()
   const [openIndex, setOpenIndex] = useState(0)
   const [formData, setFormData] = useState({
     name: '',
@@ -75,7 +77,7 @@ const faqs = [
     
     // Chặn admin gửi câu hỏi
     if (userRole?.toLowerCase() === 'admin') {
-      setStatusMessage('✗ Admin không thể gửi câu hỏi!')
+      toast.error('Admin không thể gửi câu hỏi!')
       return
     }
     
@@ -97,7 +99,8 @@ const faqs = [
         throw new Error('Không thể gửi câu hỏi')
       }
 
-      setStatusMessage('✓ Câu hỏi đã được gửi! Chúng tôi sẽ phản hồi sớm.')
+      toast.success('Câu hỏi đã được gửi! Chúng tôi sẽ phản hồi sớm.')
+      setStatusMessage('')
       setFormData({
         name: '',
         email: '',
@@ -106,7 +109,7 @@ const faqs = [
         question: ''
       })
     } catch (error) {
-      setStatusMessage('✗ ' + error.message)
+      toast.error(error.message)
     }
   }
 

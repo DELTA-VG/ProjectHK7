@@ -1,0 +1,238 @@
+.admin-orders-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-orders-section {
+  flex: 1;
+  padding: 2rem;
+  background: #3E2723;
+}
+
+.admin-orders-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-title {
+  color: white;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Stats */
+.order-stats {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: rgba(97, 71, 54, 0.5);
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(212, 165, 116, 0.5);
+}
+
+.stat-card .stat-number {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+}
+
+.stat-card .stat-label {
+  color: rgba(255,255,255,0.7);
+  font-size: 0.85rem;
+}
+
+.stat-card.pending .stat-number { color: #ff9800; }
+.stat-card.paid .stat-number { color: #2196f3; }
+.stat-card.confirmed .stat-number { color: #9c27b0; }
+.stat-card.shipping .stat-number { color: #00bcd4; }
+.stat-card.delivered .stat-number { color: #4caf50; }
+
+/* Filter Tabs */
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-tab {
+  padding: 10px 20px;
+  background: rgba(97, 71, 54, 0.5);
+  border: 1px solid rgba(212, 165, 116, 0.3);
+  color: rgba(255,255,255,0.7);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-tab:hover {
+  background: rgba(212, 165, 116, 0.2);
+  color: white;
+}
+
+.filter-tab.active {
+  background: #d4a574;
+  color: #3E2723;
+  font-weight: 600;
+}
+
+/* Table */
+.orders-table-wrapper {
+  overflow-x: auto;
+  background: rgba(97, 71, 54, 0.3);
+  border-radius: 12px;
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.orders-table th {
+  background: rgba(62, 39, 35, 0.8);
+  color: #d4a574;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.orders-table td {
+  padding: 1rem;
+  color: rgba(255,255,255,0.9);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.orders-table tr:hover {
+  background: rgba(212, 165, 116, 0.1);
+}
+
+.order-id {
+  font-family: monospace;
+  color: #d4a574;
+  font-weight: 600;
+}
+
+.customer-info small {
+  color: rgba(255,255,255,0.5);
+  display: block;
+}
+
+.item-mini {
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+}
+
+.items-cell small {
+  color: rgba(255,255,255,0.5);
+}
+
+.price-cell {
+  color: #81C784;
+  font-weight: 600;
+}
+
+.payment-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.payment-badge.unpaid {
+  background: #ff9800;
+  color: white;
+}
+
+.payment-badge.paid {
+  background: #4caf50;
+  color: white;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+}
+
+.date-cell {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.7);
+}
+
+.status-select {
+  padding: 8px 12px;
+  background: rgba(62, 39, 35, 0.8);
+  border: 1px solid rgba(212, 165, 116, 0.3);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #d4a574;
+}
+
+/* Loading & Empty */
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 4rem;
+  color: rgba(255,255,255,0.7);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(212, 165, 116, 0.3);
+  border-top-color: #d4a574;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .order-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .order-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .filter-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 10px;
+  }
+  
+  .filter-tab {
+    white-space: nowrap;
+  }
+}
