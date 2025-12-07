@@ -17,10 +17,16 @@ export default function CartPage() {
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState(null)
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, productId: null, productName: '' })
+  
+  // Suggested products
+  const [suggestedProducts, setSuggestedProducts] = useState([])
+  const [addingToCart, setAddingToCart] = useState({})
+  
   const navigate = useNavigate()
 
   useEffect(() => {
     fetchCart(true)
+    fetchSuggestedProducts()
   }, [])
 
   const fetchCart = async (isInitial = false) => {
@@ -117,6 +123,52 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     navigate('/checkout')
+  }
+
+  // Fetch random suggested products
+  const fetchSuggestedProducts = async () => {
+    try {
+      const products = await api.getProducts({ limit: 20 })
+      // Lọc bỏ sản phẩm đã có trong giỏ và random 4 sản phẩm
+      const cartProductIds = cartItems.map(item => item.product?.id)
+      const filtered = products.filter(p => !cartProductIds.includes(p.id))
+      const shuffled = filtered.sort(() => 0.5 - Math.random())
+      setSuggestedProducts(shuffled.slice(0, 4))
+    } catch (err) {
+      console.error('Error fetching suggested products:', err)
+    }
+  }
+
+  // Refresh suggestions khi cart thay đổi
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      const cartProductIds = cartItems.map(item => item.product?.id)
+      setSuggestedProducts(prev => prev.filter(p => !cartProductIds.includes(p.id)))
+    }
+  }, [cartItems])
+
+  // Add suggested product to cart
+  const addSuggestedToCart = async (productId) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      toast.warning('Vui lòng đăng nhập để thêm vào giỏ hàng')
+      return
+    }
+
+    setAddingToCart(prev => ({ ...prev, [productId]: true }))
+    
+    try {
+      await api.addToCart(productId, 1)
+      toast.success('Đã thêm vào giỏ hàng!')
+      await fetchCart(false)
+      // Xóa sản phẩm vừa thêm khỏi gợi ý
+      setSuggestedProducts(prev => prev.filter(p => p.id !== productId))
+    } catch (err) {
+      console.error('Error adding to cart:', err)
+      toast.error(err.message || 'Không thể thêm vào giỏ hàng')
+    } finally {
+      setAddingToCart(prev => ({ ...prev, [productId]: false }))
+    }
   }
 
   if (loading) {
@@ -360,6 +412,40 @@ export default function CartPage() {
           )}
         </div>
       </section>
+
+      {/* Suggested Products */}
+      {suggestedProducts.length > 0 && (
+        <section className="suggested-section">
+          <div className="suggested-container">
+            <h2 className="suggested-title">🎁 Có thể bạn cũng thích</h2>
+            <div className="suggested-grid">
+              {suggestedProducts.map(product => (
+                <div key={product.id} className="suggested-card">
+                  <div className="suggested-image-wrapper">
+                    <img src={product.image} alt={product.name} className="suggested-image" />
+                    {product.badge && (
+                      <span className={`suggested-badge badge-${product.badge.toLowerCase()}`}>
+                        {product.badge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="suggested-info">
+                    <h3 className="suggested-name">{product.name}</h3>
+                    <p className="suggested-price">${product.price.toFixed(2)}</p>
+                    <button
+                      className="suggested-add-btn"
+                      onClick={() => addSuggestedToCart(product.id)}
+                      disabled={addingToCart[product.id]}
+                    >
+                      {addingToCart[product.id] ? 'Đang thêm...' : '🛒 Thêm vào giỏ'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <SocialSidebar />
       <ChatButton />

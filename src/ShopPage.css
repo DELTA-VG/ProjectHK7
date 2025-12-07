@@ -232,6 +232,12 @@
   transition: all 0.3s;
 }
 
+.toolbar-select option {
+  background: #3E2723;
+  color: white;
+  padding: 8px;
+}
+
 .toolbar-select:hover {
   background: rgba(232, 180, 168, 0.2);
 }
