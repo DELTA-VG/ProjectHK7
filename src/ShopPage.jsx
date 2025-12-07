@@ -889,7 +889,7 @@ export default function ShopPage() {
                     </div>
                     
                     <div className="product-info">
-                      <h3 className="product-name">{product.name}</h3>
+                      <h3 className="product-name style={{ color: '#fff' }}>">{product.name}</h3>
                       <p className="product-price">${product.price.toFixed(2)}</p>
                     </div>
 
