@@ -827,7 +827,8 @@
   gap: 8px;
 }
 
-.ingredients-list-modal {
+.ingredients-list-modal,
+.ingredients-detail-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -843,6 +844,12 @@
   padding: 10px 14px;
   background: #f8f9fa;
   border-radius: 8px;
+  font-size: 14px;
+}
+
+.ingredients-text {
+  color: #555;
+  line-height: 1.6;
   font-size: 14px;
 }
 

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
+import ConfirmModal from './ConfirmModal'
+import { useToast } from './contexts/ToastContext'
 import api from './services/api'
 import './RecipesPage.css'
 
@@ -12,6 +14,18 @@ export default function RecipesPage() {
   const [error, setError] = useState(null)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  
+  // Ingredients từ kho
+  const [availableIngredients, setAvailableIngredients] = useState([])
+  const [selectedIngredients, setSelectedIngredients] = useState([])
+  
+  // Confirm Modal
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  })
   
   const [formData, setFormData] = useState({
     instructions: '',
@@ -24,17 +38,29 @@ export default function RecipesPage() {
   })
 
   const navigate = useNavigate()
+  const toast = useToast()
   const token = localStorage.getItem('token')
   const userRole = localStorage.getItem('userRole')
 
   useEffect(() => {
     if (!token || userRole !== 'admin') {
-      alert('Only admins can access this page')
+      toast.error('Chỉ admin mới có quyền truy cập trang này')
       navigate('/home')
       return
     }
     fetchData()
+    fetchIngredients()
   }, [token, userRole, navigate])
+  
+  // Fetch danh sách nguyên liệu từ kho
+  const fetchIngredients = async () => {
+    try {
+      const data = await api.getIngredients()
+      setAvailableIngredients(data)
+    } catch (err) {
+      console.error('Error fetching ingredients:', err)
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -69,6 +95,30 @@ export default function RecipesPage() {
     }
   }
 
+  // Quản lý ingredients trong form
+  const addIngredient = () => {
+    setSelectedIngredients([...selectedIngredients, { ingredient_id: '', quantity: '', unit: '' }])
+  }
+  
+  const removeIngredient = (index) => {
+    setSelectedIngredients(selectedIngredients.filter((_, i) => i !== index))
+  }
+  
+  const updateIngredient = (index, field, value) => {
+    const updated = [...selectedIngredients]
+    updated[index][field] = value
+    
+    // Tự động lấy unit khi chọn ingredient
+    if (field === 'ingredient_id' && value) {
+      const ing = availableIngredients.find(i => i.id === value)
+      if (ing) {
+        updated[index].unit = ing.unit
+      }
+    }
+    
+    setSelectedIngredients(updated)
+  }
+
   const resetForm = () => {
     setFormData({
       instructions: '',
@@ -79,6 +129,7 @@ export default function RecipesPage() {
       cook_time: 0,
       servings: 1
     })
+    setSelectedIngredients([])
     setSelectedProduct(null)
     setShowForm(false)
   }
@@ -102,6 +153,24 @@ export default function RecipesPage() {
         cook_time: existingRecipe.cook_time || 0,
         servings: existingRecipe.servings || 1
       })
+      
+      // Load ingredients từ recipe
+      setSelectedIngredients(
+        existingRecipe.ingredients?.map(ing => ({
+          ingredient_id: ing.ingredient_id,
+          quantity: String(ing.quantity),
+          unit: ing.unit || ''
+        })) || []
+      )
+    } else {
+      // Load từ product nếu có
+      setSelectedIngredients(
+        product.ingredients?.map(ing => ({
+          ingredient_id: ing.ingredient_id,
+          quantity: String(ing.quantity_needed),
+          unit: ing.unit || ''
+        })) || []
+      )
     }
     
     setShowForm(true)
@@ -113,11 +182,13 @@ export default function RecipesPage() {
 
     const payload = {
       product_id: selectedProduct.id,
-      ingredients: selectedProduct.ingredients?.map(ing => ({
-        ingredient_id: ing.ingredient_id,
-        quantity: ing.quantity_needed,
-        unit: ing.unit
-      })) || [],
+      ingredients: selectedIngredients
+        .filter(ing => ing.ingredient_id && ing.quantity)
+        .map(ing => ({
+          ingredient_id: ing.ingredient_id,
+          quantity: parseFloat(ing.quantity),
+          unit: ing.unit
+        })),
       instructions: formData.instructions,
       origin: formData.origin,
       story: formData.story,
@@ -132,34 +203,44 @@ export default function RecipesPage() {
       
       if (existingRecipe) {
         await api.updateRecipe(existingRecipe.id, payload)
-        alert('✅ Recipe updated successfully')
+        toast.success('Cập nhật công thức thành công!')
       } else {
         await api.createRecipe(payload)
-        alert('✅ Recipe created successfully')
+        toast.success('Tạo công thức thành công!')
       }
 
       resetForm()
       fetchData()
     } catch (err) {
       console.error('Error saving recipe:', err)
-      alert(err.message || 'Failed to save recipe')
+      toast.error(err.message || 'Không thể lưu công thức')
     }
   }
 
-  const handleDelete = async (productId) => {
+  const handleDelete = (productId) => {
     const recipe = recipes[productId]
     if (!recipe) return
     
-    if (!confirm('Are you sure you want to delete this recipe?')) return
-
-    try {
-      await api.deleteRecipe(recipe.id)
-      alert('✅ Recipe deleted successfully')
-      fetchData()
-    } catch (err) {
-      console.error('Error deleting recipe:', err)
-      alert(err.message || 'Failed to delete recipe')
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa công thức',
+      message: 'Bạn có chắc muốn xóa công thức này?',
+      onConfirm: async () => {
+        try {
+          await api.deleteRecipe(recipe.id)
+          toast.success('Xóa công thức thành công!')
+          fetchData()
+        } catch (err) {
+          console.error('Error deleting recipe:', err)
+          toast.error(err.message || 'Không thể xóa công thức')
+        }
+        setConfirmModal({ ...confirmModal, isOpen: false })
+      }
+    })
+  }
+  
+  const closeConfirmModal = () => {
+    setConfirmModal({ ...confirmModal, isOpen: false })
   }
 
   if (loading) {
@@ -311,6 +392,59 @@ export default function RecipesPage() {
                   </label>
                 </div>
 
+                {/* Ingredients Section */}
+                <div className="form-full ingredients-section">
+                  <div className="ingredients-header">
+                    <label>Ingredients (từ kho)</label>
+                    <button type="button" className="add-ingredient-btn" onClick={addIngredient}>
+                      + Thêm nguyên liệu
+                    </button>
+                  </div>
+                  
+                  <div className="ingredients-list">
+                    {selectedIngredients.map((ing, index) => (
+                      <div key={index} className="ingredient-row">
+                        <select
+                          value={ing.ingredient_id}
+                          onChange={(e) => updateIngredient(index, 'ingredient_id', e.target.value)}
+                          className="ingredient-select"
+                        >
+                          <option value="">Chọn nguyên liệu...</option>
+                          {availableIngredients.map(avail => (
+                            <option key={avail.id} value={avail.id}>
+                              {avail.name} ({avail.quantity} {avail.unit} trong kho)
+                            </option>
+                          ))}
+                        </select>
+                        
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="Số lượng"
+                          value={ing.quantity}
+                          onChange={(e) => updateIngredient(index, 'quantity', e.target.value)}
+                          className="ingredient-quantity"
+                        />
+                        
+                        <span className="ingredient-unit">{ing.unit}</span>
+                        
+                        <button
+                          type="button"
+                          className="remove-ingredient-btn"
+                          onClick={() => removeIngredient(index)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    
+                    {selectedIngredients.length === 0 && (
+                      <p className="no-ingredients-text">Chưa có nguyên liệu nào</p>
+                    )}
+                  </div>
+                </div>
+
                 <div className="form-actions">
                   <button type="submit" className="submit-btn">
                     {recipes[selectedProduct.id] ? 'Update' : 'Create'}
@@ -391,6 +525,15 @@ export default function RecipesPage() {
       </section>
 
       <Footer />
+      
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={closeConfirmModal}
+      />
     </div>
   )
 }

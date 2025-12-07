@@ -23,7 +23,8 @@ class ProductCreate(BaseModel):
     description: str
     image: str  # URL
     badge: Optional[str] = None  # SPECIAL, NEW, POPULAR, BESTSELLER, HEALTHY
-    ingredients: Optional[List[IngredientUsage]] = []  # ← THÊM FIELD MỚI
+    ingredients: Optional[List[IngredientUsage]] = []  # Liên kết với kho
+    ingredients_text: Optional[str] = ""  # Mô tả nguyên liệu viết tay
 
 
 class ProductUpdate(BaseModel):
@@ -34,7 +35,8 @@ class ProductUpdate(BaseModel):
     image: Optional[str] = None
     badge: Optional[str] = None
     is_available: Optional[bool] = None
-    ingredients: Optional[List[IngredientUsage]] = None  # ← THÊM
+    ingredients: Optional[List[IngredientUsage]] = None  # Liên kết với kho
+    ingredients_text: Optional[str] = None  # Mô tả nguyên liệu viết tay
 
 class IngredientDetail(BaseModel):
     """Thông tin chi tiết ingredient trong product"""
@@ -88,7 +90,17 @@ class ProductResponse(BaseModel):
     image: str
     badge: Optional[str]
     is_available: bool
-    ingredients: List[IngredientDetail] = []  # ← THÊM
+    ingredients: List[IngredientDetail] = []
+    # New fields
+    ingredients_text: str = ""
+    prep_time: int = 0
+    cook_time: int = 0
+    servings: int = 1
+    origin: str = ""
+    story: str = ""
+    history: str = ""
+    avg_rating: float = 0
+    review_count: int = 0
     created_at: datetime
     updated_at: datetime
 

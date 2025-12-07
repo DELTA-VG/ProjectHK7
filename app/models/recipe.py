@@ -62,13 +62,18 @@ class RecipeModel:
         """Tính giá vốn của công thức"""
         recipe = db.recipes.find_one({"_id": ObjectId(recipe_id)})
         if not recipe:
-            return {"cost": 0, "details": []}
+            return {"total_cost": 0, "details": []}
         
         total_cost = 0
         details = []
         
         for item in recipe.get("ingredients", []):
-            ingredient = db.ingredients.find_one({"_id": ObjectId(item["ingredient_id"])})
+            # Hỗ trợ cả string và ObjectId
+            ing_id = item["ingredient_id"]
+            if isinstance(ing_id, str):
+                ing_id = ObjectId(ing_id)
+            
+            ingredient = db.ingredients.find_one({"_id": ing_id})
             if ingredient:
                 item_cost = ingredient["price_per_unit"] * item["quantity"]
                 total_cost += item_cost
@@ -76,7 +81,7 @@ class RecipeModel:
                     "ingredient_id": str(ingredient["_id"]),
                     "name": ingredient["name"],
                     "quantity": item["quantity"],
-                    "unit": item["unit"],
+                    "unit": item.get("unit", ingredient["unit"]),
                     "price_per_unit": ingredient["price_per_unit"],
                     "cost": item_cost
                 })
@@ -92,9 +97,14 @@ class RecipeModel:
         
         # Kiểm tra đủ nguyên liệu không
         for item in recipe.get("ingredients", []):
-            ingredient = db.ingredients.find_one({"_id": ObjectId(item["ingredient_id"])})
+            # Hỗ trợ cả string và ObjectId
+            ing_id = item["ingredient_id"]
+            if isinstance(ing_id, str):
+                ing_id = ObjectId(ing_id)
+            
+            ingredient = db.ingredients.find_one({"_id": ing_id})
             if not ingredient:
-                return {"success": False, "message": f"Nguyên liệu không tồn tại"}
+                return {"success": False, "message": f"Nguyên liệu không tồn tại: {item.get('name', ing_id)}"}
             needed = item["quantity"] * quantity
             if ingredient["quantity"] < needed:
                 return {
@@ -105,10 +115,14 @@ class RecipeModel:
         # Trừ nguyên liệu
         from app.models.ingredient import IngredientModel
         for item in recipe.get("ingredients", []):
+            ing_id = item["ingredient_id"]
+            if isinstance(ing_id, ObjectId):
+                ing_id = str(ing_id)
+            
             needed = item["quantity"] * quantity
             IngredientModel.reduce_stock(
                 db, 
-                item["ingredient_id"], 
+                ing_id, 
                 needed, 
                 f"Bán sản phẩm (x{quantity})"
             )

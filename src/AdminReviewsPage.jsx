@@ -1,22 +1,26 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from './Header'
 import Footer from './Footer'
+import { useToast } from './contexts/ToastContext'
+import ConfirmModal from './ConfirmModal'
 import api from './services/api'
 import './AdminReviewsPage.css'
 
 export default function AdminReviewsPage() {
   const navigate = useNavigate()
+  const toast = useToast()
   const [reviews, setReviews] = useState([])
   const [filter, setFilter] = useState('pending') // 'pending', 'all', 'approved', 'hidden'
   const [loading, setLoading] = useState(true)
   const [processingIds, setProcessingIds] = useState(new Set())
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', reviewId: null })
 
   const userRole = localStorage.getItem('userRole')
   
   useEffect(() => {
     if (userRole !== 'admin') {
-      alert('⚠️ Admin access only!')
+      toast.error('Bạn không có quyền truy cập')
       navigate('/')
       return
     }
@@ -42,68 +46,42 @@ export default function AdminReviewsPage() {
       setReviews(data)
     } catch (err) {
       console.error('Error fetching reviews:', err)
-      alert('Failed to load reviews: ' + err.message)
+      toast.error('Không thể tải đánh giá')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleApprove = async (reviewId) => {
-    if (processingIds.has(reviewId)) return
-    
-    setProcessingIds(prev => new Set(prev).add(reviewId))
-    
-    try {
-      await api.approveReview(reviewId)
-      alert('✅ Review approved!')
-      fetchReviews()
-    } catch (err) {
-      console.error('Error approving review:', err)
-      alert('Failed to approve: ' + err.message)
-    } finally {
-      setProcessingIds(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(reviewId)
-        return newSet
-      })
-    }
+  const openConfirmModal = (type, reviewId) => {
+    setConfirmModal({ isOpen: true, type, reviewId })
   }
 
-  const handleHide = async (reviewId) => {
-    if (processingIds.has(reviewId)) return
-    if (!window.confirm('Hide this review?')) return
-    
-    setProcessingIds(prev => new Set(prev).add(reviewId))
-    
-    try {
-      await api.hideReview(reviewId)
-      alert('✅ Review hidden!')
-      fetchReviews()
-    } catch (err) {
-      console.error('Error hiding review:', err)
-      alert('Failed to hide: ' + err.message)
-    } finally {
-      setProcessingIds(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(reviewId)
-        return newSet
-      })
-    }
+  const closeConfirmModal = () => {
+    setConfirmModal({ isOpen: false, type: '', reviewId: null })
   }
 
-  const handleDelete = async (reviewId) => {
+  const handleConfirm = async () => {
+    const { type, reviewId } = confirmModal
+    closeConfirmModal()
+
     if (processingIds.has(reviewId)) return
-    if (!window.confirm('⚠️ Permanently delete this review?')) return
-    
     setProcessingIds(prev => new Set(prev).add(reviewId))
-    
+
     try {
-      await api.deleteReview(reviewId)
-      alert('✅ Review deleted!')
+      if (type === 'approve') {
+        await api.approveReview(reviewId)
+        toast.success('Đã duyệt đánh giá')
+      } else if (type === 'hide') {
+        await api.hideReview(reviewId)
+        toast.success('Đã ẩn đánh giá')
+      } else if (type === 'delete') {
+        await api.deleteReview(reviewId)
+        toast.success('Đã xóa đánh giá')
+      }
       fetchReviews()
     } catch (err) {
-      console.error('Error deleting review:', err)
-      alert('Failed to delete: ' + err.message)
+      console.error(`Error ${type} review:`, err)
+      toast.error(`Không thể ${type === 'approve' ? 'duyệt' : type === 'hide' ? 'ẩn' : 'xóa'} đánh giá`)
     } finally {
       setProcessingIds(prev => {
         const newSet = new Set(prev)
@@ -209,29 +187,29 @@ export default function AdminReviewsPage() {
                     {!review.is_approved && (
                       <button
                         className="action-btn approve-btn"
-                        onClick={() => handleApprove(review.id)}
+                        onClick={() => openConfirmModal('approve', review.id)}
                         disabled={processingIds.has(review.id)}
                       >
-                        {processingIds.has(review.id) ? '...' : '✅ Approve'}
+                        {processingIds.has(review.id) ? '...' : '✅ Duyệt'}
                       </button>
                     )}
                     
                     {!review.is_hidden && (
                       <button
                         className="action-btn hide-btn"
-                        onClick={() => handleHide(review.id)}
+                        onClick={() => openConfirmModal('hide', review.id)}
                         disabled={processingIds.has(review.id)}
                       >
-                        {processingIds.has(review.id) ? '...' : '🚫 Hide'}
+                        {processingIds.has(review.id) ? '...' : '🚫 Ẩn'}
                       </button>
                     )}
                     
                     <button
                       className="action-btn delete-btn"
-                      onClick={() => handleDelete(review.id)}
+                      onClick={() => openConfirmModal('delete', review.id)}
                       disabled={processingIds.has(review.id)}
                     >
-                      {processingIds.has(review.id) ? '...' : '🗑️ Delete'}
+                      {processingIds.has(review.id) ? '...' : '🗑️ Xóa'}
                     </button>
                   </div>
                 </div>
@@ -242,6 +220,27 @@ export default function AdminReviewsPage() {
       </section>
 
       <Footer />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={
+          confirmModal.type === 'approve' ? 'Duyệt đánh giá' :
+          confirmModal.type === 'hide' ? 'Ẩn đánh giá' : 'Xóa đánh giá'
+        }
+        message={
+          confirmModal.type === 'approve' ? 'Bạn có chắc muốn duyệt đánh giá này?' :
+          confirmModal.type === 'hide' ? 'Bạn có chắc muốn ẩn đánh giá này?' :
+          'Bạn có chắc muốn xóa vĩnh viễn đánh giá này?'
+        }
+        confirmText={
+          confirmModal.type === 'approve' ? 'Duyệt' :
+          confirmModal.type === 'hide' ? 'Ẩn' : 'Xóa'
+        }
+        cancelText="Hủy"
+        type={confirmModal.type === 'delete' ? 'danger' : 'warning'}
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmModal}
+      />
     </div>
   )
 }

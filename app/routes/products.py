@@ -116,12 +116,17 @@ async def get_product(product_id: str):
         # Lấy tên nguyên liệu
         ingredients_detail = []
         for item in recipe.get("ingredients", []):
-            ingredient = db.ingredients.find_one({"_id": ObjectId(item["ingredient_id"])})
+            # Hỗ trợ cả string và ObjectId
+            ing_id = item["ingredient_id"]
+            if isinstance(ing_id, str):
+                ing_id = ObjectId(ing_id)
+            
+            ingredient = db.ingredients.find_one({"_id": ing_id})
             if ingredient:
                 ingredients_detail.append({
                     "name": ingredient["name"],
                     "quantity": item["quantity"],
-                    "unit": item["unit"]
+                    "unit": item.get("unit", ingredient["unit"])
                 })
 
         result["recipe"] = {
@@ -182,7 +187,28 @@ async def update_product(
             detail="Product not found"
         )
 
-    return ProductModel.product_to_dict(updated_product, db)  # ← THÊM db
+    # Đồng bộ ingredients với Recipe nếu có cập nhật
+    if "ingredients" in update_data and update_data["ingredients"]:
+        recipe = db.recipes.find_one({"product_id": ObjectId(product_id)})
+        if recipe:
+            # Cập nhật Recipe.ingredients
+            recipe_ingredients = []
+            for ing in update_data["ingredients"]:
+                ingredient = db.ingredients.find_one({"_id": ObjectId(ing["ingredient_id"])})
+                if ingredient:
+                    recipe_ingredients.append({
+                        "ingredient_id": ing["ingredient_id"],
+                        "quantity": ing["quantity"],
+                        "unit": ingredient["unit"],
+                        "name": ingredient["name"]
+                    })
+            
+            db.recipes.update_one(
+                {"_id": recipe["_id"]},
+                {"$set": {"ingredients": recipe_ingredients}}
+            )
+
+    return ProductModel.product_to_dict(updated_product, db)
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)

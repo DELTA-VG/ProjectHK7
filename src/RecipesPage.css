@@ -333,3 +333,119 @@
     height: 40px;
   }
 }
+
+/* =
+==== INGREDIENTS SECTION ===== */
+.ingredients-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(232, 180, 168, 0.2);
+}
+
+.ingredients-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.ingredients-header label {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+}
+
+.add-ingredient-btn {
+  padding: 8px 16px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.add-ingredient-btn:hover {
+  background: #45a049;
+  transform: translateY(-1px);
+}
+
+.ingredients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ingredient-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: rgba(97, 71, 54, 0.3);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.ingredient-select {
+  flex: 2;
+  padding: 10px 12px;
+  border: 1px solid rgba(232, 180, 168, 0.3);
+  border-radius: 6px;
+  background: rgba(62, 39, 35, 0.8);
+  color: white;
+  font-size: 14px;
+}
+
+.ingredient-select:focus {
+  outline: none;
+  border-color: #E8B4A8;
+}
+
+.ingredient-quantity {
+  width: 100px;
+  padding: 10px 12px;
+  border: 1px solid rgba(232, 180, 168, 0.3);
+  border-radius: 6px;
+  background: rgba(62, 39, 35, 0.8);
+  color: white;
+  font-size: 14px;
+}
+
+.ingredient-quantity:focus {
+  outline: none;
+  border-color: #E8B4A8;
+}
+
+.ingredient-unit {
+  min-width: 50px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.remove-ingredient-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: #F44336;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-ingredient-btn:hover {
+  background: #d32f2f;
+  transform: scale(1.05);
+}
+
+.no-ingredients-text {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}

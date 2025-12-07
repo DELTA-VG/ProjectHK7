@@ -79,8 +79,14 @@
 }
 
 .stat-card.revenue { border-left: 4px solid #4caf50; }
+.stat-card.cost { border-left: 4px solid #ff9800; }
+.stat-card.profit { border-left: 4px solid #4caf50; background: #f1f8e9; }
+.stat-card.loss { border-left: 4px solid #f44336; background: #ffebee; }
+.stat-card.margin { border-left: 4px solid #9c27b0; }
 .stat-card.orders { border-left: 4px solid #2196f3; }
 .stat-card.products { border-left: 4px solid #ff9800; }
+.stat-card.avg { border-left: 4px solid #607d8b; }
+.stat-card.avg-profit { border-left: 4px solid #00bcd4; }
 .stat-card.delivered { border-left: 4px solid #9c27b0; }
 
 /* Reports Row */

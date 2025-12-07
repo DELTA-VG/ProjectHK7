@@ -4,6 +4,7 @@ import Header from './Header'
 import SocialSidebar from './SocialSidebar'
 import ChatButton from './ChatButton'
 import Footer from './Footer'
+import ConfirmModal from './ConfirmModal'
 import { useToast } from './contexts/ToastContext'
 import './ShopPage.css'
 import api from './services/api'
@@ -44,6 +45,7 @@ export default function ShopPage() {
     description: '',
     image: '',
     badge: '',
+    ingredients_text: '',  // Mô tả nguyên liệu viết tay cho khách xem
   })
   
   // ===== INGREDIENTS STATE =====
@@ -60,6 +62,14 @@ export default function ShopPage() {
     comment: ''
   })
   const [reviewLoading, setReviewLoading] = useState(false)
+  
+  // Confirm Modal
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null
+  })
 
   const token = localStorage.getItem('token')
   const userRole = localStorage.getItem('userRole')
@@ -330,6 +340,7 @@ export default function ShopPage() {
       description: '',
       image: '',
       badge: '',
+      ingredients_text: '',
     })
     setSelectedIngredients([])
   }
@@ -393,6 +404,7 @@ export default function ShopPage() {
       description: product.description,
       image: product.image || '',
       badge: product.badge || '',
+      ingredients_text: product.ingredients_text || '',
     })
     
     setSelectedIngredients(
@@ -406,19 +418,30 @@ export default function ShopPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleDeleteProduct = async (id) => {
+  const handleDeleteProduct = (id) => {
     if (!isAdmin) return
-    if (!window.confirm('Delete this product?')) return
-
-    try {
-      await api.deleteProduct(id)
-      toast.success('Xóa sản phẩm thành công!')
-      fetchProducts()
-      fetchCategories()
-    } catch (err) {
-      console.error(err)
-      toast.error(err.message || 'Lỗi khi xóa sản phẩm')
-    }
+    
+    setConfirmModal({
+      isOpen: true,
+      title: 'Xóa sản phẩm',
+      message: 'Bạn có chắc muốn xóa sản phẩm này?',
+      onConfirm: async () => {
+        try {
+          await api.deleteProduct(id)
+          toast.success('Xóa sản phẩm thành công!')
+          fetchProducts()
+          fetchCategories()
+        } catch (err) {
+          console.error(err)
+          toast.error(err.message || 'Lỗi khi xóa sản phẩm')
+        }
+        setConfirmModal(prev => ({ ...prev, isOpen: false }))
+      }
+    })
+  }
+  
+  const closeConfirmModal = () => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }))
   }
 
   const toggleFavourite = async (productId) => {
@@ -727,9 +750,20 @@ export default function ShopPage() {
                     />
                   </label>
 
+                  <label className="admin-form-full">
+                    Ingredients (Text - hiển thị cho khách)
+                    <textarea
+                      name="ingredients_text"
+                      rows={2}
+                      value={adminForm.ingredients_text}
+                      onChange={handleAdminFormChange}
+                      placeholder="VD: Bột mì, bơ Anchor, chocolate Bỉ, trứng gà, đường..."
+                    />
+                  </label>
+
                   <div className="admin-form-full">
                     <label className="ingredients-section-label">
-                      Ingredients (Optional)
+                      Ingredients (Quản lý kho - Optional)
                       <button
                         type="button"
                         className="add-ingredient-btn"
@@ -959,66 +993,57 @@ export default function ShopPage() {
         </button>
       </div>
 
-      {/* ===== INGREDIENTS SECTION - LUÔN HIỂN THỊ ===== */}
+      {/* ===== INGREDIENTS SECTION ===== */}
       <div className="product-modal-ingredients">
         <h3 className="ingredients-title">🥘 Ingredients</h3>
-        {selectedProduct.ingredients && selectedProduct.ingredients.length > 0 ? (
-          <ul className="ingredients-list-modal">
+        {selectedProduct.ingredients_text ? (
+          <p className="ingredients-text">{selectedProduct.ingredients_text}</p>
+        ) : selectedProduct.recipe?.ingredients?.length > 0 ? (
+          <ul className="ingredients-detail-list">
+            {selectedProduct.recipe.ingredients.map((ing, idx) => (
+              <li key={idx} className="ingredient-item">
+                {ing.name}: {ing.quantity} {ing.unit}
+              </li>
+            ))}
+          </ul>
+        ) : selectedProduct.ingredients?.length > 0 ? (
+          <ul className="ingredients-detail-list">
             {selectedProduct.ingredients.map((ing, idx) => (
               <li key={idx} className="ingredient-item">
-                <span className="ingredient-name">{ing.name}</span>
-                <span className="ingredient-quantity">
-                  {ing.quantity_needed} {ing.unit}
-                </span>
-                {!ing.is_sufficient && (
-                  <span className="ingredient-warning">
-                    ⚠️ Low stock ({ing.available_stock} {ing.unit} left)
-                  </span>
-                )}
+                {ing.name}: {ing.quantity_needed} {ing.unit}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="empty-field-text">Ingredients: </p>
+          <p className="empty-field-text">Chưa có thông tin nguyên liệu</p>
         )}
       </div>
 
-      {/* ===== RECIPE SECTION - LUÔN HIỂN THỊ TẤT CẢ FIELDS ===== */}
+      {/* ===== TIME & SERVINGS ===== */}
+      <div className="recipe-subsection">
+        <h3 className="recipe-subtitle">⏱️ Time & Servings</h3>
+        <div className="recipe-time-info">
+          <span className="time-item">
+            ⏱️ Prep: {selectedProduct.prep_time || 0} mins
+          </span>
+          <span className="time-item">
+            🍳 Cook: {selectedProduct.cook_time || 0} mins
+          </span>
+          <span className="time-item">
+            🍽️ Servings: {selectedProduct.servings || 1}
+          </span>
+        </div>
+      </div>
+
+      {/* ===== PRODUCT INFO SECTION ===== */}
       <div className="product-recipe-section">
-        <h3 className="recipe-main-title">📖 Recipe Information</h3>
-
-        {/* Recipe Ingredients */}
-        <div className="recipe-subsection">
-          <h3 className="recipe-subtitle">🍳 Recipe Ingredients</h3>
-          {selectedProduct.recipe?.ingredients && selectedProduct.recipe.ingredients.length > 0 ? (
-            <ul className="recipe-ingredients-list">
-              {selectedProduct.recipe.ingredients.map((ing, idx) => (
-                <li key={idx} className="recipe-ingredient-item">
-                  <span className="ingredient-name">{ing.name}</span>
-                  <span className="ingredient-quantity">
-                    {ing.quantity} {ing.unit}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="empty-field-text">Recipe Ingredients: </p>
-          )}
-        </div>
-
-        {/* Instructions */}
-        <div className="recipe-subsection">
-          <h3 className="recipe-subtitle">📝 Instructions</h3>
-          <p className="recipe-text">
-            {selectedProduct.recipe?.instructions || 'Instructions: '}
-          </p>
-        </div>
+        <h3 className="recipe-main-title">📖 Product Information</h3>
 
         {/* Origin */}
         <div className="recipe-subsection">
           <h3 className="recipe-subtitle">🌍 Origin</h3>
           <p className="recipe-text">
-            {selectedProduct.recipe?.origin || 'Origin: '}
+            {selectedProduct.origin || 'Chưa có thông tin'}
           </p>
         </div>
 
@@ -1026,7 +1051,7 @@ export default function ShopPage() {
         <div className="recipe-subsection">
           <h3 className="recipe-subtitle">📖 Story</h3>
           <p className="recipe-text">
-            {selectedProduct.recipe?.story || 'Story: '}
+            {selectedProduct.story || 'Chưa có thông tin'}
           </p>
         </div>
 
@@ -1034,24 +1059,8 @@ export default function ShopPage() {
         <div className="recipe-subsection">
           <h3 className="recipe-subtitle">🕰️ History</h3>
           <p className="recipe-text">
-            {selectedProduct.recipe?.history || 'History: '}
+            {selectedProduct.history || 'Chưa có thông tin'}
           </p>
-        </div>
-
-        {/* Time Info */}
-        <div className="recipe-subsection">
-          <h3 className="recipe-subtitle">⏱️ Time & Servings</h3>
-          <div className="recipe-time-info">
-            <span className="time-item">
-              ⏱️ Prep Time: {selectedProduct.recipe?.prep_time || 0} mins
-            </span>
-            <span className="time-item">
-              🍳 Cook Time: {selectedProduct.recipe?.cook_time || 0} mins
-            </span>
-            <span className="time-item">
-              🍽️ Servings: {selectedProduct.recipe?.servings || 0}
-            </span>
-          </div>
         </div>
       </div>
 
@@ -1203,6 +1212,15 @@ export default function ShopPage() {
       <SocialSidebar />
       <ChatButton />
       <Footer />
+      
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={closeConfirmModal}
+      />
     </div>
   )
 }

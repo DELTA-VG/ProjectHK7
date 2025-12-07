@@ -24,6 +24,9 @@ export default function ReportsPage() {
     totalRevenue: 0,
     totalOrders: 0,
     totalProducts: 0,
+    totalCost: 0,
+    profit: 0,
+    profitMargin: 0,
     ordersByStatus: [],
     revenueByDay: [],
     topProducts: []
@@ -49,6 +52,12 @@ export default function ReportsPage() {
 
       const productsRes = await fetch(`${API_URL}/products/count`)
       const productsCount = productsRes.ok ? await productsRes.json() : { count: 0 }
+
+      // Fetch profit data
+      const profitRes = await fetch(`${API_URL}/reports/profit?period=${dateRange}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const profitData = profitRes.ok ? await profitRes.json() : { total_cost: 0, profit: 0, profit_margin: 0 }
 
       // Filter by date range
       const now = new Date()
@@ -136,6 +145,9 @@ export default function ReportsPage() {
         totalRevenue,
         totalOrders: filteredOrders.length,
         totalProducts: productsCount.count || 0,
+        totalCost: profitData.total_cost || 0,
+        profit: profitData.profit || 0,
+        profitMargin: profitData.profit_margin || 0,
         ordersByStatus,
         revenueByDay,
         topProducts
@@ -203,6 +215,33 @@ export default function ReportsPage() {
                     <span className="stat-label">Doanh thu</span>
                   </div>
                 </div>
+                <div className="stat-card cost">
+                  <div className="stat-icon">📉</div>
+                  <div className="stat-info">
+                    <span className="stat-value">{formatFullCurrency(stats.totalCost)}</span>
+                    <span className="stat-label">Chi phí NL</span>
+                  </div>
+                </div>
+                <div className={`stat-card ${stats.profit >= 0 ? 'profit' : 'loss'}`}>
+                  <div className="stat-icon">{stats.profit >= 0 ? '📈' : '📉'}</div>
+                  <div className="stat-info">
+                    <span className="stat-value">{formatFullCurrency(Math.abs(stats.profit))}</span>
+                    <span className="stat-label">{stats.profit >= 0 ? 'Lợi nhuận' : 'Lỗ'}</span>
+                  </div>
+                </div>
+                <div className="stat-card margin">
+                  <div className="stat-icon">%</div>
+                  <div className="stat-info">
+                    <span className="stat-value" style={{ color: stats.profitMargin >= 0 ? '#4caf50' : '#f44336' }}>
+                      {stats.profitMargin.toFixed(1)}%
+                    </span>
+                    <span className="stat-label">Biên lợi nhuận</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Cards Row 2 */}
+              <div className="stats-grid">
                 <div className="stat-card orders">
                   <div className="stat-icon">📦</div>
                   <div className="stat-info">
@@ -218,12 +257,21 @@ export default function ReportsPage() {
                   </div>
                 </div>
                 <div className="stat-card avg">
-                  <div className="stat-icon">📈</div>
+                  <div className="stat-icon">💵</div>
                   <div className="stat-info">
                     <span className="stat-value">
                       {stats.totalOrders > 0 ? formatFullCurrency(stats.totalRevenue / stats.totalOrders) : '0đ'}
                     </span>
                     <span className="stat-label">TB/đơn</span>
+                  </div>
+                </div>
+                <div className="stat-card avg-profit">
+                  <div className="stat-icon">💎</div>
+                  <div className="stat-info">
+                    <span className="stat-value">
+                      {stats.totalOrders > 0 ? formatFullCurrency(stats.profit / stats.totalOrders) : '0đ'}
+                    </span>
+                    <span className="stat-label">Lời TB/đơn</span>
                   </div>
                 </div>
               </div>

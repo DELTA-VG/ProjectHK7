@@ -26,6 +26,18 @@ async def create_recipe(
     recipe_data["ingredients"] = [i.dict() for i in data.ingredients]
     
     recipe = RecipeModel.create_recipe(db, recipe_data)
+    
+    # Đồng bộ ingredients với Product
+    from bson import ObjectId
+    product_ingredients = [
+        {"ingredient_id": i["ingredient_id"], "quantity": i["quantity"]}
+        for i in recipe_data["ingredients"]
+    ]
+    db.products.update_one(
+        {"_id": ObjectId(data.product_id)},
+        {"$set": {"ingredients": product_ingredients}}
+    )
+    
     return RecipeModel.recipe_to_dict(recipe)
 
 
@@ -83,6 +95,19 @@ async def update_recipe(
     recipe = RecipeModel.update_recipe(db, recipe_id, update_data)
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
+    
+    # Đồng bộ ingredients với Product nếu có cập nhật
+    if "ingredients" in update_data:
+        from bson import ObjectId
+        product_ingredients = [
+            {"ingredient_id": i["ingredient_id"], "quantity": i["quantity"]}
+            for i in update_data["ingredients"]
+        ]
+        db.products.update_one(
+            {"_id": recipe["product_id"]},
+            {"$set": {"ingredients": product_ingredients}}
+        )
+    
     return RecipeModel.recipe_to_dict(recipe)
 
 

@@ -95,13 +95,15 @@ class ProductModel:
         if not product:
             return None
 
-        # ← SỬA: if db and product.get → if db is not None and product.get
         ingredient_details = []
         if db is not None and product.get("ingredients"):
             for ing_usage in product["ingredients"]:
-                ingredient = db.ingredients.find_one({
-                    "_id": ObjectId(ing_usage["ingredient_id"])
-                })
+                # Hỗ trợ cả string và ObjectId
+                ing_id = ing_usage["ingredient_id"]
+                if isinstance(ing_id, str):
+                    ing_id = ObjectId(ing_id)
+                
+                ingredient = db.ingredients.find_one({"_id": ing_id})
 
                 if ingredient:
                     quantity_needed = ing_usage["quantity"]
@@ -126,6 +128,16 @@ class ProductModel:
             "badge": product.get("badge"),
             "ingredients": ingredient_details,
             "is_available": product.get("is_available", True),
+            # New fields
+            "ingredients_text": product.get("ingredients_text", ""),
+            "prep_time": product.get("prep_time", 0),
+            "cook_time": product.get("cook_time", 0),
+            "servings": product.get("servings", 1),
+            "origin": product.get("origin", ""),
+            "story": product.get("story", ""),
+            "history": product.get("history", ""),
+            "avg_rating": product.get("avg_rating", 0),
+            "review_count": product.get("review_count", 0),
             "created_at": product["created_at"],
             "updated_at": product["updated_at"]
         }
@@ -134,19 +146,29 @@ class ProductModel:
     def check_ingredients_availability(db, product_id: str, quantity: int = 1) -> dict:
         """
         Kiểm tra xem có đủ nguyên liệu để làm sản phẩm không
+        Ưu tiên lấy từ Recipe, fallback sang Product.ingredients
         Trả về: {available: bool, missing: [...]}
         """
         product = db.products.find_one({"_id": ObjectId(product_id)})
+        if not product:
+            return {"available": True, "missing": []}
 
-        if not product or not product.get("ingredients"):
+        # Ưu tiên lấy ingredients từ Recipe
+        recipe = db.recipes.find_one({"product_id": ObjectId(product_id)})
+        ingredients_list = recipe.get("ingredients", []) if recipe else product.get("ingredients", [])
+        
+        if not ingredients_list:
             return {"available": True, "missing": []}
 
         missing_ingredients = []
 
-        for ing_usage in product["ingredients"]:
-            ingredient = db.ingredients.find_one({
-                "_id": ObjectId(ing_usage["ingredient_id"])
-            })
+        for ing_usage in ingredients_list:
+            # Hỗ trợ cả string và ObjectId
+            ing_id = ing_usage["ingredient_id"]
+            if isinstance(ing_id, str):
+                ing_id = ObjectId(ing_id)
+            
+            ingredient = db.ingredients.find_one({"_id": ing_id})
 
             if not ingredient:
                 continue
