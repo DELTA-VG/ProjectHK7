@@ -8,16 +8,16 @@ export default function Footer() {
         {/* Left Column - Logo & Contact */}
         <div className="footer-column footer-brand">
           <div className="footer-logo">
-            <div className="logo-icon">☕</div>
-            <span className="logo-text">Bakery Cake</span>
+            <div className="logo-icon">🍰</div>
+            <span className="logo-text">Sweet Bakery</span>
           </div>
 
           <div className="footer-contact">
             <div className="contact-item">
               <span className="contact-icon">📍</span>
               <div>
-                <div className="contact-label">ADDRESS</div>
-                <div className="contact-value">No.23, King St. Gold Ave. NY 74521</div>
+                <div className="contact-label">ĐỊA CHỈ</div>
+                <div className="contact-value">Số 8 Lê Thái Tổ, Hoàn Kiếm, Hà Nội</div>
               </div>
             </div>
 
@@ -25,7 +25,7 @@ export default function Footer() {
               <span className="contact-icon">📞</span>
               <div>
                 <div className="contact-label">TEL</div>
-                <a href="tel:+18001234567" className="contact-value">+1 (800) 1234 567</a>
+                <a href="tel:+842439999999" className="contact-value">+84 24 3999 9999</a>
               </div>
             </div>
 
@@ -33,7 +33,7 @@ export default function Footer() {
               <span className="contact-icon">📞</span>
               <div>
                 <div className="contact-label">TEL</div>
-                <a href="tel:+18001234568" className="contact-value">+1 (800) 1234 568</a>
+                <a href="tel:+84901234567" className="contact-value">+84 90 123 4567</a>
               </div>
             </div>
           </div>
@@ -41,38 +41,36 @@ export default function Footer() {
 
         {/* Middle Column - Working Hours */}
         <div className="footer-column footer-hours">
-          <h3 className="footer-title">Working Hours</h3>
+          <h3 className="footer-title">Giờ mở cửa</h3>
           
           <div className="hours-section">
             <div className="hours-label">
               <span className="hours-icon">🕒</span>
-              OPENING HOURS
+              GIỜ HOẠT ĐỘNG
             </div>
-            <div className="hours-time">Sunday - Thursday 9:00 AM - 12:00 AM</div>
-            <div className="hours-time">Friday Saturday 9:00 AM - 2:00 AM</div>
+            <div className="hours-time">Thứ 2 - Thứ 7: 7:00 AM - 10:00 PM</div>
           </div>
 
           <div className="hours-section">
             <div className="hours-label">
               <span className="hours-icon">🍳</span>
-              BREAKFAST BUFFET
+              GIỜ HOẠT ĐỘNG
             </div>
-            <div className="hours-time">Sunday - Thursday 9:00 AM - 12:00 AM</div>
-            <div className="hours-time">Friday Saturday 9:00 AM - 2:00 AM</div>
+            <div className="hours-time"> Chủ nhật: 7:00 AM - 09:00 PM</div>
           </div>
         </div>
 
         {/* Right Column - Map */}
         <div className="footer-column footer-map">
           <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d193595.15830869428!2d-74.11976!3d40.697403!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c24fa5d33f083b%3A0xc80b8f06e177fe62!2sNew%20York%2C%20NY%2C%20USA!5e0!3m2!1sen!2s!4v1234567890123!5m2!1sen!2s"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.096890183977!2d105.84117631533315!3d21.028511793005486!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ab953357c995%3A0x516b63e99c972d80!2zSOG7kyBMw6ogVGjhuqEgVMO0LCBIb8OgbiBLaWVtLCBIw6AgTuG7mWk!5e0!3m2!1svi!2s!4v1670000000000!5m2!1svi!2s"
             width="100%"
             height="300"
             style={{ border: 0, borderRadius: '12px' }}
             allowFullScreen=""
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            title="XtraCafe Location"
+            title="Sweet Bakery Location"
           ></iframe>
         </div>
       </div>
@@ -80,10 +78,10 @@ export default function Footer() {
       {/* Copyright Bar */}
       <div className="footer-bottom">
         <div className="footer-bottom-container">
-          <p>© 2025 XtraCafé. All rights reserved.</p>
+          <p>© 2025 Sweet Bakery. All rights reserved.</p>
           <div className="footer-links">
-            <a href="/privacy">Privacy Policy</a>
-            <a href="/terms">Terms of Service</a>
+            <a href="/privacy">Chính sách bảo mật</a>
+            <a href="/terms">Điều khoản sử dụng</a>
           </div>
         </div>
       </div>
