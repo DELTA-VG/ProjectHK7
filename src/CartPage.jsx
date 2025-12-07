@@ -19,39 +19,39 @@ export default function CartPage() {
   }, [])
 
   const fetchCart = async () => {
-  const token = localStorage.getItem('token')
-  if (!token) {
-    setLoading(false)
-    return
-  }
-
-  setLoading(true)
-  setError(null)
-  
-  try {
-    const [items, total] = await Promise.all([
-      api.getCart(),
-      api.getCartTotal()
-    ])
-    
-    console.log('✅ Cart items:', items)
-    console.log('✅ Cart total:', total)
-    
-    setCartItems(items)
-    setCartTotal(total)
-  } catch (err) {
-    console.error('❌ Error fetching cart:', err)
-    
-    // ✅ Don't show error if session expired (already redirecting)
-    if (err.message === 'Session expired') {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      setLoading(false)
       return
     }
+
+    setLoading(true)
+    setError(null)
     
-    setError(err.message || 'Failed to load cart')
-  } finally {
-    setLoading(false)
+    try {
+      const [items, total] = await Promise.all([
+        api.getCart(),
+        api.getCartTotal()
+      ])
+      
+      console.log('✅ Cart items:', items)
+      console.log('✅ Cart total:', total)
+      
+      setCartItems(items)
+      setCartTotal(total)
+    } catch (err) {
+      console.error('❌ Error fetching cart:', err)
+      
+      // Don't show error if session expired (already redirecting)
+      if (err.message === 'Session expired') {
+        return
+      }
+      
+      setError(err.message || 'Failed to load cart')
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   const updateQuantity = async (productId, newQuantity) => {
     if (newQuantity < 1) return
@@ -78,7 +78,7 @@ export default function CartPage() {
   }
 
   const handleCheckout = () => {
-    alert('🎉 Checkout feature coming soon!')
+    navigate('/checkout')
   }
 
   if (loading) {
@@ -145,7 +145,7 @@ export default function CartPage() {
               <div className="empty-icon">🔒</div>
               <h2>Please Login</h2>
               <p>You need to login to view your cart.</p>
-              <button onClick={() => navigate('/login')} className="login-btn">
+              <button onClick={() => navigate('/auth')} className="login-btn">
                 Login Now
               </button>
             </div>
@@ -291,7 +291,7 @@ export default function CartPage() {
                       )}
                     </span>
                     <span className="total-value">
-                      {cartTotal.shipping === 0 ? 'Free' : `$${cartTotal.shipping.toFixed(2)}`}
+                      {cartTotal.shipping === 0 ? 'Free' : `${cartTotal.shipping.toFixed(2)}`}
                     </span>
                   </div>
                   {cartTotal.subtotal < 50 && cartTotal.subtotal > 0 && (

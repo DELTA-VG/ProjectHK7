@@ -59,46 +59,46 @@ export default function FAQPage() {
   }
 
   const handleSubmit = async (e) => {
-  e.preventDefault()
-  const token = localStorage.getItem('token')
-  const userRole = localStorage.getItem('userRole')
-  
-  // Chặn admin gửi câu hỏi
-  if (userRole?.toLowerCase() === 'admin') {
-    setStatusMessage('✗ Admin không thể gửi câu hỏi!')
-    return
-  }
-  
-  try {
-    const response = await fetch('/api/questions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        subject: formData.subject,
-        department: formData.department,
-        question: formData.question
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error('Không thể gửi câu hỏi')
+    e.preventDefault()
+    const token = localStorage.getItem('token')
+    const userRole = localStorage.getItem('userRole')
+    
+    // Chặn admin gửi câu hỏi
+    if (userRole?.toLowerCase() === 'admin') {
+      setStatusMessage('✗ Admin không thể gửi câu hỏi!')
+      return
     }
+    
+    try {
+      const response = await fetch('/api/questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          subject: formData.subject,
+          department: formData.department,
+          question: formData.question
+        })
+      })
 
-    setStatusMessage('✓ Câu hỏi đã được gửi! Chúng tôi sẽ phản hồi sớm.')
-    setFormData({
-      name: '',
-      email: '',
-      subject: '',
-      department: 'Business Department',
-      question: ''
-    })
-  } catch (error) {
-    setStatusMessage('✗ ' + error.message)
+      if (!response.ok) {
+        throw new Error('Không thể gửi câu hỏi')
+      }
+
+      setStatusMessage('✓ Câu hỏi đã được gửi! Chúng tôi sẽ phản hồi sớm.')
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        department: 'Business Department',
+        question: ''
+      })
+    } catch (error) {
+      setStatusMessage('✗ ' + error.message)
+    }
   }
-}
 
   return (
     <div className="faq-page">

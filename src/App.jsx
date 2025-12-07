@@ -13,14 +13,14 @@ import AdminQuestionsPage from './AdminQuestionsPage'
 import RequireAdmin from './RequireAdmin'
 import CartPage from './CartPage'
 import FavouritePage from './FavouritePage'
-import Chatbot from './Chatbot'  // ← THÊM IMPORT
+import Chatbot from './Chatbot'
 import AdminProductsPage from './AdminProductsPage'
 import IngredientsPage from './IngredientsPage'
 import RecipesPage from './RecipesPage'
-import AdminReviewsPage from './AdminReviewsPage' // ← THÊM
-
-
-
+import AdminReviewsPage from './AdminReviewsPage'
+import CheckoutPage from './CheckoutPage'
+import OrderSuccessPage from './OrderSuccessPage'
+import MyOrdersPage from './MyOrdersPage'
 import './App.css'
 
 export default function App() {
@@ -40,6 +40,9 @@ export default function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
+          <Route path="/my-orders" element={<MyOrdersPage />} />
           <Route path="/favourites" element={<FavouritePage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/ingredients" element={<IngredientsPage />} />

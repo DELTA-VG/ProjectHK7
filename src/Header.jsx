@@ -67,12 +67,14 @@ export default function Header() {
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
   }, [token, userRole])
+
   const handleAdminClick = (event) => {
-  if (userRole?.toLowerCase() !== 'admin') {
-    event.preventDefault()
-    alert('Bạn không phải admin nên không thể truy cập trang này.')
+    if (userRole?.toLowerCase() !== 'admin') {
+      event.preventDefault()
+      alert('Bạn không phải admin nên không thể truy cập trang này.')
+    }
   }
-}
+
   return (
     <header className={`header ${isVisible ? 'header-visible' : 'header-hidden'}`}>
       <div className="header-container">
@@ -88,13 +90,14 @@ export default function Header() {
           <TransitionLink to="/shop" className="nav-link">Shop</TransitionLink>
           <TransitionLink to="/faq" className="nav-link">FAQ</TransitionLink>
           <TransitionLink to="/contact" className="nav-link">Contact</TransitionLink>
+          <TransitionLink to="/my-orders" className="nav-link">My Orders</TransitionLink>
           <TransitionLink
-    to="/admin/questions"
-    className="nav-link"
-    onClick={handleAdminClick}
-  >
-    Admin Panel
-  </TransitionLink>
+            to="/admin/questions"
+            className="nav-link"
+            onClick={handleAdminClick}
+          >
+            Admin Panel
+          </TransitionLink>
         </nav>
         <div className="header-actions">
           <a href="tel:+1234567890" className="phone-btn">📞 Call Now</a>

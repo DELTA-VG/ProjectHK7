@@ -151,6 +151,22 @@
   box-shadow: 0 2px 6px rgba(232, 180, 168, 0.4);
 }
 
+.favourites-btn {
+  color: #FFF3E0;
+  text-decoration: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.favourites-btn:hover {
+  background: rgba(232, 180, 168, 0.15);
+}
+
 /* Responsive */
 @media (max-width: 968px) {
   .nav {
@@ -175,7 +191,8 @@
     font-size: 18px;
   }
 }
-notification-btn {
+
+.notification-btn {
   position: relative;
   color: #FFF3E0;
   text-decoration: none;
@@ -205,6 +222,7 @@ notification-btn {
   font-size: 11px;
   font-weight: 700;
 }
+
 .logout-btn {
   background: #D4A59A;
   color: #3E2723;
@@ -220,6 +238,7 @@ notification-btn {
   background: #C4958A;
   transform: translateY(-2px);
 }
+
 .admin-btn {
   background: #8B6F5C;
   color: white;
