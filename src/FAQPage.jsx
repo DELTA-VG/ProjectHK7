@@ -6,7 +6,7 @@ import Footer from './Footer'
 import './FAQPage.css'
 
 export default function FAQPage() {
-  const [openIndex, setOpenIndex] = useState(0)
+  const [openIndex, setOpenIndex] = useState(0) // FAQ đầu tiên mở mặc định
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,7 +14,6 @@ export default function FAQPage() {
     department: 'Business Department',
     question: ''
   })
-  const [statusMessage, setStatusMessage] = useState('')
 
   const faqs = [
     {
@@ -58,36 +57,11 @@ export default function FAQPage() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = async (e) => {
-  e.preventDefault()
-  const token = localStorage.getItem('token')
-  const userRole = localStorage.getItem('userRole')
-  
-  // Chặn admin gửi câu hỏi
-  if (userRole?.toLowerCase() === 'admin') {
-    setStatusMessage('✗ Admin không thể gửi câu hỏi!')
-    return
-  }
-  
-  try {
-    const response = await fetch('/api/questions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        subject: formData.subject,
-        department: formData.department,
-        question: formData.question
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error('Không thể gửi câu hỏi')
-    }
-
-    setStatusMessage('✓ Câu hỏi đã được gửi! Chúng tôi sẽ phản hồi sớm.')
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    console.log('Form submitted:', formData)
+    alert('Thank you! Your question has been sent.')
+    // Reset form
     setFormData({
       name: '',
       email: '',
@@ -95,15 +69,13 @@ export default function FAQPage() {
       department: 'Business Department',
       question: ''
     })
-  } catch (error) {
-    setStatusMessage('✗ ' + error.message)
   }
-}
 
   return (
     <div className="faq-page">
       <Header />
       
+      {/* Page Banner */}
       <section className="page-banner">
         <div className="page-banner-container">
           <h1 className="page-title">FAQ</h1>
@@ -115,9 +87,12 @@ export default function FAQPage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
       <section className="faq-section">
         <div className="faq-container">
+          {/* Left Column - Hero & Form */}
           <div className="faq-left">
+            {/* Hero */}
             <div className="faq-hero">
               <img 
                 src="https://images.unsplash.com/photo-1511920170033-f8396924c348?w=600&q=80" 
@@ -139,6 +114,7 @@ export default function FAQPage() {
               </div>
             </div>
 
+            {/* Ask Form */}
             <div className="ask-form-section">
               <div className="ask-header">
                 <span className="ask-icon">💬</span>
@@ -199,12 +175,10 @@ export default function FAQPage() {
                 </div>
                 <button type="submit" className="ask-button">Ask</button>
               </form>
-              {statusMessage && (
-                <p className="status-message">{statusMessage}</p>
-              )}
             </div>
           </div>
 
+          {/* Right Column - FAQ Accordion */}
           <div className="faq-right">
             <div className="faq-list">
               {faqs.map((faq, index) => (

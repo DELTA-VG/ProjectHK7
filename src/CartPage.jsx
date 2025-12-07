@@ -1,155 +1,57 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import Header from './Header'
-import SocialSidebar from './SocialSidebar'
-import ChatButton from './ChatButton'
 import Footer from './Footer'
-import api from './services/api'
+import { useAuth } from './contexts/AuthContext'
+import { useCart } from './contexts/CartContext'
+import { useToast } from './contexts/ToastContext'
+import LoginModal from './LoginModal'
 import './CartPage.css'
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState([])
-  const [cartTotal, setCartTotal] = useState({ subtotal: 0, shipping: 0, total: 0, total_items: 0 })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { cart, cartTotal, loading, updateQuantity, removeFromCart } = useCart()
+  const toast = useToast()
+  const [showLogin, setShowLogin] = useState(false)
 
-  useEffect(() => {
-    fetchCart()
-  }, [])
-
-  const fetchCart = async () => {
-  const token = localStorage.getItem('token')
-  if (!token) {
-    setLoading(false)
-    return
+  const handleRemove = async (productId, productName) => {
+    await removeFromCart(productId)
+    toast.success(`Đã xóa ${productName} khỏi giỏ hàng`)
   }
 
-  setLoading(true)
-  setError(null)
-  
-  try {
-    const [items, total] = await Promise.all([
-      api.getCart(),
-      api.getCartTotal()
-    ])
-    
-    console.log('✅ Cart items:', items)
-    console.log('✅ Cart total:', total)
-    
-    setCartItems(items)
-    setCartTotal(total)
-  } catch (err) {
-    console.error('❌ Error fetching cart:', err)
-    
-    // ✅ Don't show error if session expired (already redirecting)
-    if (err.message === 'Session expired') {
-      return
-    }
-    
-    setError(err.message || 'Failed to load cart')
-  } finally {
-    setLoading(false)
-  }
-}
-
-  const updateQuantity = async (productId, newQuantity) => {
-    if (newQuantity < 1) return
-    
-    try {
-      await api.updateCartQuantity(productId, newQuantity)
-      await fetchCart()
-    } catch (err) {
-      console.error('❌ Error updating quantity:', err)
-      alert(err.message || 'Failed to update quantity')
-    }
-  }
-
-  const removeItem = async (productId) => {
-    if (!confirm('Remove this item from cart?')) return
-    
-    try {
-      await api.removeFromCart(productId)
-      await fetchCart()
-    } catch (err) {
-      console.error('❌ Error removing item:', err)
-      alert(err.message || 'Failed to remove item')
-    }
-  }
-
-  const handleCheckout = () => {
-    alert('🎉 Checkout feature coming soon!')
+  if (!user) {
+    return (
+      <div className="cart-page">
+        <Header />
+        <section className="page-banner">
+          <div className="page-banner-container">
+            <h1 className="page-title">Shopping Cart</h1>
+            <div className="breadcrumb">
+              <Link to="/">🏠</Link>
+              <span className="separator">»</span>
+              <span>Cart</span>
+            </div>
+          </div>
+        </section>
+        <section className="cart-section">
+          <div className="cart-container empty-cart">
+            <p>Please login to view your cart</p>
+            <button className="btn-primary" onClick={() => setShowLogin(true)}>Login</button>
+          </div>
+        </section>
+        <Footer />
+        <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
+      </div>
+    )
   }
 
   if (loading) {
     return (
       <div className="cart-page">
         <Header />
-        <section className="page-banner">
-          <div className="page-banner-container">
-            <h1 className="page-title">Shopping Cart</h1>
-          </div>
-        </section>
         <section className="cart-section">
-          <div className="cart-container">
-            <div className="loading-state">
-              <div className="spinner"></div>
-              <p>Loading your cart...</p>
-            </div>
-          </div>
-        </section>
-        <Footer />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="cart-page">
-        <Header />
-        <section className="page-banner">
-          <div className="page-banner-container">
-            <h1 className="page-title">Shopping Cart</h1>
-          </div>
-        </section>
-        <section className="cart-section">
-          <div className="cart-container">
-            <div className="error-state">
-              <div className="error-icon">⚠️</div>
-              <h2>Unable to Load Cart</h2>
-              <p>{error}</p>
-              <button onClick={fetchCart} className="retry-btn">
-                🔄 Try Again
-              </button>
-            </div>
-          </div>
-        </section>
-        <Footer />
-      </div>
-    )
-  }
-
-  const token = localStorage.getItem('token')
-  if (!token) {
-    return (
-      <div className="cart-page">
-        <Header />
-        <section className="page-banner">
-          <div className="page-banner-container">
-            <h1 className="page-title">Shopping Cart</h1>
-          </div>
-        </section>
-        <section className="cart-section">
-          <div className="cart-container">
-            <div className="empty-state">
-              <div className="empty-icon">🔒</div>
-              <h2>Please Login</h2>
-              <p>You need to login to view your cart.</p>
-              <button onClick={() => navigate('/login')} className="login-btn">
-                Login Now
-              </button>
-            </div>
-          </div>
+          <div className="cart-container"><p>Loading...</p></div>
         </section>
         <Footer />
       </div>
@@ -164,9 +66,7 @@ export default function CartPage() {
         <div className="page-banner-container">
           <h1 className="page-title">Shopping Cart</h1>
           <div className="breadcrumb">
-            <a href="/">🏠</a>
-            <span className="separator">»</span>
-            <a href="/shop">Shop</a>
+            <Link to="/">🏠</Link>
             <span className="separator">»</span>
             <span>Cart</span>
           </div>
@@ -175,150 +75,76 @@ export default function CartPage() {
 
       <section className="cart-section">
         <div className="cart-container">
-          {cartItems.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🛒</div>
-              <h2>Your cart is empty</h2>
-              <p>Looks like you haven't added anything to your cart yet.</p>
-              <button onClick={() => navigate('/shop')} className="shop-btn">
-                Start Shopping
-              </button>
+          {cart.length === 0 ? (
+            <div className="empty-cart">
+              <p>Your cart is empty</p>
+              <Link to="/shop" className="btn-primary">Continue Shopping</Link>
             </div>
           ) : (
-            <div className="cart-content">
-              {/* Cart Items Table */}
-              <div className="cart-table-wrapper">
-                <div className="cart-header">
-                  <h2>Your Items ({cartTotal.total_items})</h2>
-                </div>
-                
+            <div className="cart-layout">
+              <div className="cart-items">
                 <table className="cart-table">
                   <thead>
                     <tr>
                       <th>Product</th>
                       <th>Price</th>
                       <th>Quantity</th>
-                      <th>Subtotal</th>
+                      <th>Total</th>
                       <th></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {cartItems.map(item => (
-                      <tr key={item.cart_id} className="cart-item">
-                        <td className="product-col">
-                          <div className="product-info">
-                            <img 
-                              src={item.product.image} 
-                              alt={item.product.name} 
-                              className="product-thumb" 
-                            />
-                            <div className="product-details">
-                              <span className="product-name">{item.product.name}</span>
-                              {item.product.badge && (
-                                <span className={`product-badge badge-${item.product.badge.toLowerCase()}`}>
-                                  {item.product.badge}
-                                </span>
-                              )}
-                            </div>
+                    {cart.map(item => (
+                      <tr key={item.cart_id}>
+                        <td className="product-cell">
+                          <img src={item.product.image} alt={item.product.name} />
+                          <span>{item.product.name}</span>
+                        </td>
+                        <td>${item.product.price.toFixed(2)}</td>
+                        <td>
+                          <div className="quantity-control">
+                            <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>-</button>
+                            <span>{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)}>+</button>
                           </div>
                         </td>
-                        <td className="price-col">
-                          <span className="price">${item.product.price.toFixed(2)}</span>
-                        </td>
-                        <td className="quantity-col">
-                          <div className="quantity-input">
-                            <button 
-                              onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                              className="qty-btn"
-                              disabled={item.quantity <= 1}
-                            >
-                              −
-                            </button>
-                            <input 
-                              type="number" 
-                              value={item.quantity} 
-                              readOnly
-                              className="qty-value"
-                            />
-                            <button 
-                              onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                              className="qty-btn"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </td>
-                        <td className="subtotal-col">
-                          <span className="subtotal">${(item.product.price * item.quantity).toFixed(2)}</span>
-                        </td>
-                        <td className="remove-col">
-                          <button 
-                            onClick={() => removeItem(item.product.id)} 
-                            className="remove-btn"
-                            title="Remove from cart"
-                          >
-                            🗑️
-                          </button>
+                        <td>${(item.product.price * item.quantity).toFixed(2)}</td>
+                        <td>
+                          <button className="remove-btn" onClick={() => handleRemove(item.product.id, item.product.name)}>×</button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-
-                <div className="cart-actions">
-                  <button onClick={() => navigate('/shop')} className="continue-btn">
-                    ← Continue Shopping
-                  </button>
-                  <button onClick={fetchCart} className="update-btn">
-                    🔄 Refresh Cart
-                  </button>
-                </div>
               </div>
 
-              {/* Cart Totals */}
-              <div className="cart-totals">
-                <h2 className="totals-title">Order Summary</h2>
-                <div className="totals-content">
-                  <div className="total-row">
-                    <span className="total-label">Subtotal ({cartTotal.total_items} items)</span>
-                    <span className="total-value">${cartTotal.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="total-row shipping-row">
-                    <span className="total-label">
-                      Shipping
-                      {cartTotal.shipping === 0 && (
-                        <span className="free-badge">FREE</span>
-                      )}
-                    </span>
-                    <span className="total-value">
-                      {cartTotal.shipping === 0 ? 'Free' : `$${cartTotal.shipping.toFixed(2)}`}
-                    </span>
-                  </div>
-                  {cartTotal.subtotal < 50 && cartTotal.subtotal > 0 && (
-                    <div className="shipping-notice">
-                      💡 Add ${(50 - cartTotal.subtotal).toFixed(2)} more for free shipping!
-                    </div>
-                  )}
-                  <div className="total-divider"></div>
-                  <div className="total-row total-final">
-                    <span className="total-label">Total</span>
-                    <span className="total-value">${cartTotal.total.toFixed(2)}</span>
-                  </div>
-                  <button onClick={handleCheckout} className="checkout-btn">
-                    Proceed to Checkout →
-                  </button>
-                  <div className="secure-notice">
-                    🔒 Secure Checkout
-                  </div>
+              <div className="cart-summary">
+                <h3>Order Summary</h3>
+                <div className="summary-row">
+                  <span>Subtotal ({cartTotal.total_items} items)</span>
+                  <span>${cartTotal.subtotal.toFixed(2)}</span>
                 </div>
+                <div className="summary-row">
+                  <span>Shipping</span>
+                  <span>{cartTotal.shipping === 0 ? 'Free' : `$${cartTotal.shipping.toFixed(2)}`}</span>
+                </div>
+                {cartTotal.subtotal < 50 && (
+                  <p className="free-shipping-note">Add ${(50 - cartTotal.subtotal).toFixed(2)} more for free shipping!</p>
+                )}
+                <div className="summary-row total">
+                  <span>Total</span>
+                  <span>${cartTotal.total.toFixed(2)}</span>
+                </div>
+                <button className="checkout-btn" onClick={() => navigate('/checkout')}>
+                  Proceed to Checkout
+                </button>
+                <Link to="/shop" className="continue-shopping">Continue Shopping</Link>
               </div>
             </div>
           )}
         </div>
       </section>
 
-      <SocialSidebar />
-      <ChatButton />
       <Footer />
     </div>
   )
