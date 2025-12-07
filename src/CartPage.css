@@ -134,7 +134,14 @@
   font-size: 16px;
 }
 
-.shop-btn, .login-btn {
+.empty-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.shop-btn {
   padding: 14px 40px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -146,9 +153,27 @@
   transition: all 0.3s;
 }
 
-.shop-btn:hover, .login-btn:hover {
+.shop-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.empty-state .login-btn {
+  padding: 14px 40px;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.empty-state .login-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
 }
 
 /* Cart Content */

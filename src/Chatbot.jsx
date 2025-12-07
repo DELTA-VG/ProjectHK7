@@ -72,7 +72,7 @@ export default function Chatbot() {
   const handleSendMessage = async (e) => {
     e.preventDefault()
     
-    if (!inputMessage.trim()) return
+    if (!inputMessage.trim() || loading) return
 
     const userMessage = {
       role: 'user',
@@ -97,9 +97,14 @@ export default function Chatbot() {
     } catch (err) {
       console.error('Error sending message:', err)
       
+      // Check if rate limit error
+      const isRateLimit = err.message?.includes('rate') || err.message?.includes('quota')
+      
       const errorMessage = {
         role: 'assistant',
-        content: 'Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau hoặc liên hệ hotline 0901 234 567.',
+        content: isRateLimit 
+          ? 'Hệ thống đang bận, vui lòng đợi vài giây rồi thử lại nhé!'
+          : 'Xin lỗi, tôi đang gặp sự cố. Vui lòng thử lại sau hoặc liên hệ hotline 0901 234 567.',
         timestamp: new Date().toISOString()
       }
 

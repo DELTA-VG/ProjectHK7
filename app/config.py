@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
 
     GEMINI_API_KEY: str = "your-gemini-api-key"
+    GROQ_API_KEY: str = "your-groq-api-key"
 
     # SMTP Email (Gmail)
     SMTP_EMAIL: str = "your-email@gmail.com"

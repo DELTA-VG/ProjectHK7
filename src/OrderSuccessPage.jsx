@@ -5,7 +5,7 @@ import Footer from './Footer'
 import { useAuth } from './contexts/AuthContext'
 import './OrderSuccessPage.css'
 
-const API_URL = 'http://localhost:8000/api'
+const API_URL = '/api'
 
 export default function OrderSuccessPage() {
   const { orderId } = useParams()

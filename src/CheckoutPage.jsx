@@ -7,11 +7,11 @@ import { useCart } from './contexts/CartContext'
 import { useToast } from './contexts/ToastContext'
 import './CheckoutPage.css'
 
-const API_URL = 'http://localhost:8000/api'
+const API_URL = '/api'
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
-  const { user, token } = useAuth()
+  const { user, token, loading: authLoading } = useAuth()
   const { cart, cartTotal, clearCart, loading: cartLoading } = useCart()
   const toast = useToast()
   const [loading, setLoading] = useState(false)
@@ -51,6 +51,26 @@ export default function CheckoutPage() {
     }
     return () => clearInterval(interval)
   }, [showQRModal, paymentData, token, navigate])
+
+  // Wait for auth to load before checking user
+  if (authLoading) {
+    return (
+      <div className="checkout-page">
+        <Header />
+        <section className="page-banner">
+          <div className="page-banner-container">
+            <h1 className="page-title">Checkout</h1>
+          </div>
+        </section>
+        <section className="checkout-section">
+          <div className="checkout-container empty">
+            <p>Loading...</p>
+          </div>
+        </section>
+        <Footer />
+      </div>
+    )
+  }
 
   if (!user) {
     navigate('/cart')

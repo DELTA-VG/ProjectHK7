@@ -3,9 +3,11 @@ import Header from './Header'
 import SocialSidebar from './SocialSidebar'
 import ChatButton from './ChatButton'
 import Footer from './Footer'
+import { useToast } from './contexts/ToastContext'
 import './ContactPage.css'
 
 export default function ContactPage() {
+  const toast = useToast()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -22,7 +24,7 @@ export default function ContactPage() {
   const handleSubmit = (e) => {
     e.preventDefault()
     console.log('Form submitted:', formData)
-    alert('Thank you! Your message has been sent.')
+    toast.success('Cảm ơn bạn! Tin nhắn đã được gửi.')
     // Reset form
     setFormData({
       name: '',

@@ -1,35 +1,50 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from './contexts/ToastContext'
 import './AuthPage.css'
 import TransitionLink from './TransitionLink'
 
 export default function AuthPage() {
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState({ email: '', password: '', full_name: '', phone: '' })
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const toast = useToast()
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    setLoading(true)
+    
     const url = mode === 'login' ? '/api/auth/login' : '/api/auth/register'
     const payload = mode === 'login'
       ? { email: form.email, password: form.password }
       : form
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
 
-    if (!response.ok) {
-      alert('Đăng nhập/đăng ký thất bại')
-      return
+      const data = await response.json()
+      
+      if (!response.ok) {
+        toast.error(data.detail || 'Đăng nhập/đăng ký thất bại')
+        return
+      }
+
+      localStorage.setItem('token', data.access_token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+      localStorage.setItem('userRole', data.user.role?.toLowerCase?.() ?? '')
+      
+      toast.success(mode === 'login' ? 'Đăng nhập thành công!' : 'Đăng ký thành công!')
+      navigate('/home')
+    } catch (err) {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại')
+    } finally {
+      setLoading(false)
     }
-
-    const data = await response.json()
-localStorage.setItem('token', data.access_token)
-localStorage.setItem('userRole', data.user.role?.toLowerCase?.() ?? '')
-navigate('/home')
   }
 
   const handleChange = (event) => {
@@ -53,8 +68,8 @@ navigate('/home')
               <input name="phone" placeholder="Số điện thoại" value={form.phone} onChange={handleChange} required />
             </>
           )}
-          <button type="submit" className="primary-btn">
-            {mode === 'login' ? 'Đăng nhập' : 'Đăng ký'}
+          <button type="submit" className="primary-btn" disabled={loading}>
+            {loading ? 'Đang xử lý...' : (mode === 'login' ? 'Đăng nhập' : 'Đăng ký')}
           </button>
         </form>
         <div className="auth-toggle">

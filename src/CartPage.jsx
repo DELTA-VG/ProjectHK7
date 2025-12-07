@@ -1,31 +1,38 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from './Header'
 import SocialSidebar from './SocialSidebar'
 import ChatButton from './ChatButton'
 import Footer from './Footer'
+import ConfirmModal from './ConfirmModal'
+import { useToast } from './contexts/ToastContext'
 import api from './services/api'
 import './CartPage.css'
 
 export default function CartPage() {
+  const toast = useToast()
   const [cartItems, setCartItems] = useState([])
   const [cartTotal, setCartTotal] = useState({ subtotal: 0, shipping: 0, total: 0, total_items: 0 })
   const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(false)
   const [error, setError] = useState(null)
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, productId: null, productName: '' })
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetchCart()
+    fetchCart(true)
   }, [])
 
-  const fetchCart = async () => {
+  const fetchCart = async (isInitial = false) => {
     const token = localStorage.getItem('token')
     if (!token) {
       setLoading(false)
       return
     }
 
-    setLoading(true)
+    if (isInitial) {
+      setLoading(true)
+    }
     setError(null)
     
     try {
@@ -34,15 +41,11 @@ export default function CartPage() {
         api.getCartTotal()
       ])
       
-      console.log('✅ Cart items:', items)
-      console.log('✅ Cart total:', total)
-      
       setCartItems(items)
       setCartTotal(total)
     } catch (err) {
       console.error('❌ Error fetching cart:', err)
       
-      // Don't show error if session expired (already redirecting)
       if (err.message === 'Session expired') {
         return
       }
@@ -54,26 +57,61 @@ export default function CartPage() {
   }
 
   const updateQuantity = async (productId, newQuantity) => {
-    if (newQuantity < 1) return
+    if (newQuantity < 1 || updating) return
     
+    // Optimistic update - cập nhật UI ngay lập tức
+    setCartItems(prev => prev.map(item => 
+      item.product.id === productId 
+        ? { ...item, quantity: newQuantity }
+        : item
+    ))
+    
+    // Cập nhật total tạm thời
+    const item = cartItems.find(i => i.product.id === productId)
+    if (item) {
+      const diff = newQuantity - item.quantity
+      setCartTotal(prev => ({
+        ...prev,
+        subtotal: prev.subtotal + (item.product.price * diff),
+        total: prev.total + (item.product.price * diff),
+        total_items: prev.total_items + diff
+      }))
+    }
+    
+    setUpdating(true)
     try {
       await api.updateCartQuantity(productId, newQuantity)
-      await fetchCart()
+      // Fetch lại để đồng bộ với server (không show loading)
+      await fetchCart(false)
     } catch (err) {
       console.error('❌ Error updating quantity:', err)
-      alert(err.message || 'Failed to update quantity')
+      // Rollback nếu lỗi
+      await fetchCart(false)
+      toast.error(err.message || 'Không thể cập nhật số lượng')
+    } finally {
+      setUpdating(false)
     }
   }
 
-  const removeItem = async (productId) => {
-    if (!confirm('Remove this item from cart?')) return
+  const openRemoveConfirm = (productId, productName) => {
+    setConfirmModal({ isOpen: true, productId, productName })
+  }
+
+  const closeConfirmModal = () => {
+    setConfirmModal({ isOpen: false, productId: null, productName: '' })
+  }
+
+  const handleConfirmRemove = async () => {
+    const { productId } = confirmModal
+    closeConfirmModal()
     
     try {
       await api.removeFromCart(productId)
       await fetchCart()
+      toast.success('Đã xóa khỏi giỏ hàng')
     } catch (err) {
       console.error('❌ Error removing item:', err)
-      alert(err.message || 'Failed to remove item')
+      toast.error(err.message || 'Không thể xóa sản phẩm')
     }
   }
 
@@ -142,12 +180,17 @@ export default function CartPage() {
         <section className="cart-section">
           <div className="cart-container">
             <div className="empty-state">
-              <div className="empty-icon">🔒</div>
-              <h2>Please Login</h2>
-              <p>You need to login to view your cart.</p>
-              <button onClick={() => navigate('/auth')} className="login-btn">
-                Login Now
-              </button>
+              <div className="empty-icon">🛒</div>
+              <h2>Giỏ hàng trống</h2>
+              <p>Đăng nhập để thêm sản phẩm vào giỏ hàng và mua sắm.</p>
+              <div className="empty-actions">
+                <button onClick={() => navigate('/shop')} className="shop-btn">
+                  🛍️ Xem sản phẩm
+                </button>
+                <button onClick={() => navigate('/auth')} className="login-btn">
+                  Đăng nhập
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -230,7 +273,7 @@ export default function CartPage() {
                             <button 
                               onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
                               className="qty-btn"
-                              disabled={item.quantity <= 1}
+                              disabled={item.quantity <= 1 || updating}
                             >
                               −
                             </button>
@@ -243,6 +286,7 @@ export default function CartPage() {
                             <button 
                               onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                               className="qty-btn"
+                              disabled={updating}
                             >
                               +
                             </button>
@@ -253,7 +297,7 @@ export default function CartPage() {
                         </td>
                         <td className="remove-col">
                           <button 
-                            onClick={() => removeItem(item.product.id)} 
+                            onClick={() => openRemoveConfirm(item.product.id, item.product.name)} 
                             className="remove-btn"
                             title="Remove from cart"
                           >
@@ -320,6 +364,17 @@ export default function CartPage() {
       <SocialSidebar />
       <ChatButton />
       <Footer />
+      
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title="Xóa sản phẩm"
+        message={`Bạn có chắc muốn xóa "${confirmModal.productName}" khỏi giỏ hàng?`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        type="danger"
+        onConfirm={handleConfirmRemove}
+        onCancel={closeConfirmModal}
+      />
     </div>
   )
 }

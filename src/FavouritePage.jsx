@@ -1,19 +1,23 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from './Header'
 import SocialSidebar from './SocialSidebar'
 import ChatButton from './ChatButton'
 import Footer from './Footer'
+import ConfirmModal from './ConfirmModal'
+import { useToast } from './contexts/ToastContext'
 import api from './services/api'
 import './FavouritePage.css'
 
 export default function FavouritePage() {
+  const toast = useToast()
   const [favourites, setFavourites] = useState([])
   const [viewMode, setViewMode] = useState(4)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [removingIds, setRemovingIds] = useState(new Set())
   const [addingToCartIds, setAddingToCartIds] = useState(new Set())
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: '', productId: null })
 
   const navigate = useNavigate()
 
@@ -49,9 +53,10 @@ export default function FavouritePage() {
     try {
       await api.removeFromFavourites(productId)
       setFavourites(prev => prev.filter(fav => fav.product.id !== productId))
+      toast.success('Đã xóa khỏi yêu thích')
     } catch (err) {
       console.error('❌ Error removing favourite:', err)
-      alert(err.message || 'Failed to remove from favourites')
+      toast.error(err.message || 'Không thể xóa khỏi yêu thích')
     } finally {
       setRemovingIds(prev => {
         const newSet = new Set(prev)
@@ -64,7 +69,7 @@ export default function FavouritePage() {
   const addToCart = async (product) => {
     const token = localStorage.getItem('token')
     if (!token) {
-      alert('Please login to add items to cart')
+      toast.warning('Vui lòng đăng nhập để thêm vào giỏ hàng')
       return
     }
 
@@ -72,10 +77,10 @@ export default function FavouritePage() {
     
     try {
       await api.addToCart(product.id, 1)
-      alert(`✅ ${product.name} added to cart!`)
+      toast.success(`Đã thêm ${product.name} vào giỏ hàng!`)
     } catch (err) {
       console.error('❌ Error adding to cart:', err)
-      alert(err.message || 'Failed to add to cart')
+      toast.error(err.message || 'Không thể thêm vào giỏ hàng')
     } finally {
       setAddingToCartIds(prev => {
         const newSet = new Set(prev)
@@ -85,15 +90,24 @@ export default function FavouritePage() {
     }
   }
 
-  const clearAllFavourites = async () => {
-    if (!confirm('Are you sure you want to remove all favourites?')) return
+  const openClearConfirm = () => {
+    setConfirmModal({ isOpen: true, type: 'clearAll', productId: null })
+  }
+
+  const closeConfirmModal = () => {
+    setConfirmModal({ isOpen: false, type: '', productId: null })
+  }
+
+  const handleConfirm = async () => {
+    closeConfirmModal()
     
     try {
       await api.clearFavourites()
       setFavourites([])
+      toast.success('Đã xóa tất cả yêu thích')
     } catch (err) {
       console.error('❌ Error clearing favourites:', err)
-      alert(err.message || 'Failed to clear favourites')
+      toast.error(err.message || 'Không thể xóa yêu thích')
     }
   }
 
@@ -213,7 +227,7 @@ export default function FavouritePage() {
                     </button>
                   </div>
 
-                  <button onClick={clearAllFavourites} className="clear-all-btn">
+                  <button onClick={openClearConfirm} className="clear-all-btn">
                     Clear All
                   </button>
                 </div>
@@ -281,6 +295,17 @@ export default function FavouritePage() {
       <SocialSidebar />
       <ChatButton />
       <Footer />
+      
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title="Xóa tất cả yêu thích"
+        message="Bạn có chắc muốn xóa tất cả sản phẩm yêu thích?"
+        confirmText="Xóa tất cả"
+        cancelText="Hủy"
+        type="danger"
+        onConfirm={handleConfirm}
+        onCancel={closeConfirmModal}
+      />
     </div>
   )
 }

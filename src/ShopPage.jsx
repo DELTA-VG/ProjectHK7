@@ -3,10 +3,12 @@ import Header from './Header'
 import SocialSidebar from './SocialSidebar'
 import ChatButton from './ChatButton'
 import Footer from './Footer'
+import { useToast } from './contexts/ToastContext'
 import './ShopPage.css'
 import api from './services/api'
 
 export default function ShopPage() {
+  const toast = useToast()
   const [viewMode, setViewMode] = useState(4)
   const [itemsPerPage, setItemsPerPage] = useState(12)
   const [sortBy, setSortBy] = useState('default')
@@ -247,7 +249,7 @@ export default function ShopPage() {
         reviewForm.comment
       )
       
-      alert('✅ Review submitted! Waiting for admin approval.')
+      toast.success('Đánh giá đã gửi! Đang chờ admin duyệt.')
       
       // Reset form
       setReviewForm({ rating: 5, comment: '' })
@@ -260,7 +262,7 @@ export default function ShopPage() {
       
     } catch (err) {
       console.error('Error submitting review:', err)
-      alert(err.message || 'Failed to submit review')
+      toast.error(err.message || 'Không thể gửi đánh giá')
     } finally {
       setReviewLoading(false)
     }
@@ -316,7 +318,7 @@ export default function ShopPage() {
     e.preventDefault()
 
     if (!isAdmin) {
-      alert('You do not have admin permissions')
+      toast.error('Bạn không có quyền admin')
       return
     }
 
@@ -333,17 +335,17 @@ export default function ShopPage() {
     }
 
     if (Number.isNaN(payload.price)) {
-      alert('Price must be a number')
+      toast.error('Giá phải là số')
       return
     }
 
     try {
       if (editingProduct) {
         await api.updateProduct(editingProduct.id, payload)
-        alert('✅ Product updated successfully')
+        toast.success('Cập nhật sản phẩm thành công!')
       } else {
         await api.createProduct(payload)
-        alert('✅ Product added successfully')
+        toast.success('Thêm sản phẩm thành công!')
       }
 
       resetAdminForm()
@@ -352,7 +354,7 @@ export default function ShopPage() {
       fetchCategories()
     } catch (err) {
       console.error(err)
-      alert(err.message || 'An error occurred')
+      toast.error(err.message || 'Có lỗi xảy ra')
     }
   }
 
@@ -385,12 +387,12 @@ export default function ShopPage() {
 
     try {
       await api.deleteProduct(id)
-      alert('✅ Product deleted successfully')
+      toast.success('Xóa sản phẩm thành công!')
       fetchProducts()
       fetchCategories()
     } catch (err) {
       console.error(err)
-      alert(err.message || 'Error deleting product')
+      toast.error(err.message || 'Lỗi khi xóa sản phẩm')
     }
   }
 
@@ -424,7 +426,7 @@ export default function ShopPage() {
       }
     } catch (err) {
       console.error('❌ [TOGGLE] Error toggling favourite:', err)
-      alert(err.message || 'Failed to update favourites')
+      toast.error(err.message || 'Không thể cập nhật yêu thích')
     } finally {
       setFavouriteLoading(prev => ({ ...prev, [productId]: false }))
     }
@@ -435,7 +437,7 @@ export default function ShopPage() {
     
     const token = localStorage.getItem('token')
     if (!token) {
-      alert('Please login to add items to cart')
+      toast.warning('Vui lòng đăng nhập để thêm vào giỏ hàng')
       return
     }
 
@@ -444,10 +446,10 @@ export default function ShopPage() {
     
     try {
       await api.addToCart(productId, 1)
-      alert('✅ Product added to cart!')
+      toast.success('Đã thêm vào giỏ hàng!')
     } catch (err) {
       console.error('❌ [ADD TO CART] Error:', err)
-      alert(err.message || 'Failed to add to cart')
+      toast.error(err.message || 'Không thể thêm vào giỏ hàng')
     } finally {
       setCartLoading(prev => ({ ...prev, [productId]: false }))
     }

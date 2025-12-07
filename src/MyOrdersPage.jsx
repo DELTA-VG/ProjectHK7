@@ -7,7 +7,7 @@ import { useToast } from './contexts/ToastContext'
 import ConfirmModal from './ConfirmModal'
 import './MyOrdersPage.css'
 
-const API_URL = 'http://localhost:8000/api'
+const API_URL = '/api'
 
 export default function MyOrdersPage() {
   const navigate = useNavigate()

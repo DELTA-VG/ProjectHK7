@@ -1,5 +1,5 @@
 .header {
-  background: #8B6F5C;  /* Nâu sữa - Bakery theme */
+  background: #8B6F5C;
   color: white;
   position: fixed;
   top: 0;
@@ -10,12 +10,10 @@
   transition: transform 0.3s ease;
 }
 
-/* Header hiển thị */
 .header-visible {
   transform: translateY(0);
 }
 
-/* Header ẩn (trượt lên trên) */
 .header-hidden {
   transform: translateY(-100%);
 }
@@ -59,7 +57,7 @@
 .logo-text {
   font-family: 'Georgia', serif;
   font-style: italic;
-  color: #FFF3E0;  /* Kem sáng */
+  color: #FFF3E0;
 }
 
 /* Navigation */
@@ -80,17 +78,7 @@
 
 .nav-link:hover,
 .nav-link.active {
-  color: #E8B4A8;  /* Hồng phấn */
-}
-
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #E8B4A8;
+  color: #E8B4A8;
 }
 
 /* Actions */
@@ -101,8 +89,8 @@
 }
 
 .phone-btn {
-  background: #E8B4A8;  /* Hồng phấn */
-  color: #3E2723;  /* Nâu sô-cô-la */
+  background: #E8B4A8;
+  color: #3E2723;
   padding: 10px 20px;
   border-radius: 8px;
   text-decoration: none;
@@ -112,9 +100,8 @@
 }
 
 .phone-btn:hover {
-  background: #D4A59A;  /* Hồng đào */
+  background: #D4A59A;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(232, 180, 168, 0.4);
 }
 
 .cart-btn {
@@ -148,23 +135,139 @@
   justify-content: center;
   font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(232, 180, 168, 0.4);
 }
 
-.favourites-btn {
-  color: #FFF3E0;
-  text-decoration: none;
+/* Login Button */
+.login-btn {
+  background: #E8B4A8;
+  color: #3E2723;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.login-btn:hover {
+  background: #D4A59A;
+  transform: translateY(-2px);
+}
+
+/* User Menu */
+.user-menu-wrapper {
+  position: relative;
+}
+
+.user-btn {
+  background: rgba(232, 180, 168, 0.2);
+  color: #FFF3E0;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 8px;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.user-btn:hover {
+  background: rgba(232, 180, 168, 0.3);
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  min-width: 240px;
+  overflow: hidden;
+  z-index: 200;
+  animation: dropdownFade 0.2s ease;
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-header {
+  padding: 16px;
+  background: #f8f8f8;
+}
+
+.user-name {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  font-size: 15px;
+}
+
+.user-email {
+  display: block;
+  font-size: 13px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #eee;
+  margin: 0;
+}
+
+.dropdown-section-title {
+  padding: 10px 16px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-dropdown a,
+.user-dropdown button.logout-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #333;
+  text-decoration: none;
+  font-size: 14px;
+  cursor: pointer;
   transition: background 0.2s;
 }
 
-.favourites-btn:hover {
-  background: rgba(232, 180, 168, 0.15);
+.user-dropdown a:hover,
+.user-dropdown button.logout-item:hover {
+  background: #f5f5f5;
+}
+
+.logout-item {
+  color: #c00 !important;
+}
+
+.logout-item:hover {
+  background: #fee !important;
 }
 
 /* Responsive */
@@ -190,87 +293,4 @@
   .logo-text {
     font-size: 18px;
   }
-}
-
-.notification-btn {
-  position: relative;
-  color: #FFF3E0;
-  text-decoration: none;
-  font-size: 20px;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  transition: transform 0.2s;
-}
-
-.notification-btn:hover {
-  transform: scale(1.1);
-}
-
-.notification-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #E8B4A8;
-  color: #3E2723;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.logout-btn {
-  background: #D4A59A;
-  color: #3E2723;
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.logout-btn:hover {
-  background: #C4958A;
-  transform: translateY(-2px);
-}
-
-.admin-btn {
-  background: #8B6F5C;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  position: relative;
-  transition: all 0.2s;
-}
-
-.admin-btn:hover {
-  background: #7A5F4D;
-  transform: translateY(-2px);
-}
-
-.admin-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background: #E8B4A8;
-  color: #3E2723;
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  box-shadow: 0 2px 6px rgba(232, 180, 168, 0.4);
 }

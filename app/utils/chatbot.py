@@ -1,21 +1,22 @@
 """
-Hybrid Chatbot - Rule-based + RAG với Gemini
+Hybrid Chatbot - Rule-based + RAG với Groq (Llama 3)
 """
 import re
-import google.generativeai as genai
+from groq import Groq
 from typing import Optional
 from app.config import settings
 from app.database import get_database
 
-# Configure Gemini
-genai.configure(api_key=settings.GEMINI_API_KEY)
+# Configure Groq
+groq_client = Groq(api_key=settings.GROQ_API_KEY)
 
 
 class ChatbotService:
-    """Hybrid chatbot: Rule-based + RAG với Gemini"""
+    """Hybrid chatbot: Rule-based + RAG với Groq"""
     
     def __init__(self):
-        self.model = genai.GenerativeModel('gemini-2.0-flash')
+        self.client = groq_client
+        self.model = "llama-3.3-70b-versatile"  # Fast and smart
         
         # Rule-based intents
         self.intents = {
@@ -241,7 +242,9 @@ class ChatbotService:
         return "\n".join(history)
 
     async def get_rag_response(self, message: str, user_id: Optional[str] = None) -> str:
-        """Gọi Gemini với RAG context + lịch sử hội thoại"""
+        """Gọi Groq với RAG context + lịch sử hội thoại"""
+        import asyncio
+        
         context = self.build_context(message, user_id)
         
         # Thêm lịch sử hội thoại nếu có user_id
@@ -251,33 +254,58 @@ class ChatbotService:
             if history:
                 history = f"\nLịch sử hội thoại gần đây:\n{history}\n"
         
-        prompt = f"""Bạn là chatbot của Sweet Bakery - tiệm bánh ngọt cao cấp.
+        system_prompt = """Bạn là chatbot của Sweet Bakery - tiệm bánh ngọt cao cấp.
 
 Quy tắc:
-- Tra loi ngan gon, than thien, KHONG dung emoji
+- Trả lời ngắn gọn, thân thiện, KHÔNG dùng emoji
 - Chỉ trả lời dựa trên context được cung cấp
 - Nếu không biết, hướng dẫn liên hệ hotline
 - Giá tiền format: xxx,xxxđ
 - Không bịa thông tin
-- Nếu có lịch sử hội thoại, hãy nhớ ngữ cảnh để trả lời liên tục
-{history}
+- Nếu có lịch sử hội thoại, hãy nhớ ngữ cảnh để trả lời liên tục"""
+
+        user_prompt = f"""{history}
 Context:
 {context}
 
-Câu hỏi của khách: {message}
+Câu hỏi của khách: {message}"""
 
-Trả lời:"""
-
-        try:
-            print(f"[Chatbot] Calling Gemini with context length: {len(context)}")
-            response = self.model.generate_content(prompt)
-            print(f"[Chatbot] Gemini response received")
-            return response.text
-        except Exception as e:
-            print(f"[Chatbot] Gemini error: {type(e).__name__}: {e}")
-            import traceback
-            traceback.print_exc()
-            return "Xin lỗi, tôi đang gặp sự cố. Vui lòng liên hệ hotline 0901 234 567 để được hỗ trợ!"
+        # Retry với exponential backoff
+        max_retries = 3
+        base_delay = 1  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                print(f"[Chatbot] Calling Groq (attempt {attempt + 1}/{max_retries})")
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=500
+                )
+                print(f"[Chatbot] Groq response received")
+                return response.choices[0].message.content
+            except Exception as e:
+                error_str = str(e).lower()
+                
+                # Check if rate limit error
+                if "rate" in error_str or "quota" in error_str or "429" in error_str:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt)  # 1, 2, 4 seconds
+                        print(f"[Chatbot] Rate limited, waiting {delay}s before retry...")
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        print(f"[Chatbot] Rate limit exceeded after {max_retries} retries")
+                        return "Hệ thống đang bận, vui lòng thử lại sau vài giây hoặc liên hệ hotline 0901 234 567!"
+                else:
+                    print(f"[Chatbot] Groq error: {type(e).__name__}: {e}")
+                    return "Xin lỗi, tôi đang gặp sự cố. Vui lòng liên hệ hotline 0901 234 567 để được hỗ trợ!"
+        
+        return "Xin lỗi, tôi đang gặp sự cố. Vui lòng liên hệ hotline 0901 234 567 để được hỗ trợ!"
 
     async def chat(self, message: str, user_id: Optional[str] = None) -> dict:
         """Main chat function - Hybrid approach"""

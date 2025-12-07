@@ -2,12 +2,24 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const AuthContext = createContext(null)
 
-const API_URL = 'http://localhost:8000/api'
+const API_URL = '/api'
+
+// Load cached user from localStorage immediately
+const getCachedUser = () => {
+  try {
+    const cached = localStorage.getItem('user')
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
   const [token, setToken] = useState(localStorage.getItem('token'))
-  const [loading, setLoading] = useState(true)
+  // Initialize with cached user for instant display
+  const [user, setUser] = useState(token ? getCachedUser() : null)
+  // If we have cached user, don't show loading
+  const [loading, setLoading] = useState(token && !getCachedUser())
 
   useEffect(() => {
     if (token) {
@@ -25,6 +37,8 @@ export function AuthProvider({ children }) {
       if (res.ok) {
         const data = await res.json()
         setUser(data)
+        // Cache user for next page load
+        localStorage.setItem('user', JSON.stringify(data))
       } else {
         logout()
       }
@@ -45,6 +59,7 @@ export function AuthProvider({ children }) {
     if (!res.ok) throw new Error(data.detail || 'Login failed')
     
     localStorage.setItem('token', data.access_token)
+    localStorage.setItem('user', JSON.stringify(data.user))
     setToken(data.access_token)
     setUser(data.user)
     return data
@@ -63,6 +78,7 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     localStorage.removeItem('token')
+    localStorage.removeItem('user')
     setToken(null)
     setUser(null)
   }

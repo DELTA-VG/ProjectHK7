@@ -4,7 +4,7 @@ import { useAuth } from './contexts/AuthContext'
 import { useToast } from './contexts/ToastContext'
 import './LoginModal.css'
 
-const API_URL = 'http://localhost:8000/api'
+const API_URL = '/api'
 
 export default function LoginModal({ isOpen, onClose }) {
   const { login, register } = useAuth()
