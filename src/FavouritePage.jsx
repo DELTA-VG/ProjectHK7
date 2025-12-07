@@ -22,20 +22,26 @@ export default function FavouritePage() {
   }, [])
 
   const fetchFavourites = async () => {
-    setLoading(true)
-    setError(null)
+  setLoading(true)
+  setError(null)
+  
+  try {
+    const data = await api.getFavourites({ skip: 0, limit: 100 })
+    console.log('✅ Favourites loaded:', data)
+    setFavourites(data)
+  } catch (err) {
+    console.error('❌ Error fetching favourites:', err)
     
-    try {
-      const data = await api.getFavourites({ skip: 0, limit: 100 })
-      console.log('✅ Favourites loaded:', data)
-      setFavourites(data)
-    } catch (err) {
-      console.error('❌ Error fetching favourites:', err)
-      setError(err.message || 'Failed to load favourites')
-    } finally {
-      setLoading(false)
+    // ✅ Don't show error if session expired
+    if (err.message === 'Session expired') {
+      return
     }
+    
+    setError(err.message || 'Failed to load favourites')
+  } finally {
+    setLoading(false)
   }
+}
 
   const removeFromFavourites = async (productId) => {
     setRemovingIds(prev => new Set(prev).add(productId))

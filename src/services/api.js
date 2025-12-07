@@ -1,9 +1,87 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 class ApiService {
+  constructor() {
+    this.baseURL = 'http://localhost:8000'
+  }
+
+  /**
+   * Generic request method with 401 auto-logout
+   */
+  async request(method, endpoint, data = null, params = null) {
+    const url = new URL(`${this.baseURL}${endpoint}`)
+    
+    if (params) {
+      Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined) {
+          url.searchParams.append(key, params[key])
+        }
+      })
+    }
+
+    const headers = {
+      'Content-Type': 'application/json',
+    }
+
+    const token = localStorage.getItem('token')
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const options = {
+      method,
+      headers,
+    }
+
+    if (data && method !== 'GET') {
+      options.body = JSON.stringify(data)
+    }
+
+    try {
+      const response = await fetch(url.toString(), options)
+
+      // ✅ AUTO LOGOUT KHI 401
+      if (response.status === 401) {
+        console.error('❌ 401 Unauthorized - Logging out...')
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        
+        if (window.location.pathname !== '/auth') {
+          alert('⚠️ Session expired. Please login again.')
+          window.location.href = '/auth'
+        }
+        
+        throw new Error('Session expired')
+      }
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.detail || errorData.message || errorMessage
+        } catch (e) {
+          // Cannot parse error as JSON
+        }
+        throw new Error(errorMessage)
+      }
+
+      const contentType = response.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json()
+      } else {
+        return await response.text()
+      }
+    } catch (error) {
+      console.error(`Error fetching ${endpoint}:`, error)
+      throw error
+    }
+  }
+
+  // ============ PRODUCTS API ============
+
   /**
    * Get products with pagination and filters
-   * @param {Object} params - { skip, limit, category, search }
+   * @param {Object} params - { skip, limit, category, search, page }
    */
   async getProducts(params = {}) {
     const queryParams = new URLSearchParams()
@@ -121,6 +199,125 @@ class ApiService {
     }
   }
 
+  // ============ ADMIN PRODUCT CRUD ============
+
+  /**
+   * Create new product (ADMIN)
+   * @param {Object} productData
+   */
+  async createProduct(productData) {
+    const token = localStorage.getItem('token')
+    
+    try {
+      const response = await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(productData),
+      })
+
+      if (response.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        if (window.location.pathname !== '/auth') {
+          alert('⚠️ Session expired. Please login again.')
+          window.location.href = '/auth'
+        }
+        throw new Error('Session expired')
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || `Create product failed: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error creating product:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update product (ADMIN)
+   * @param {string} id - product ID
+   * @param {Object} productData
+   */
+  async updateProduct(id, productData) {
+    const token = localStorage.getItem('token')
+    
+    try {
+      const response = await fetch(`${API_URL}/products/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(productData),
+      })
+
+      if (response.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        if (window.location.pathname !== '/auth') {
+          alert('⚠️ Session expired. Please login again.')
+          window.location.href = '/auth'
+        }
+        throw new Error('Session expired')
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || `Update product failed: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error updating product:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete product (ADMIN) – backend sẽ set is_available = false
+   * @param {string} id
+   */
+  async deleteProduct(id) {
+    const token = localStorage.getItem('token')
+    
+    try {
+      const response = await fetch(`${API_URL}/products/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        if (window.location.pathname !== '/auth') {
+          alert('⚠️ Session expired. Please login again.')
+          window.location.href = '/auth'
+        }
+        throw new Error('Session expired')
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || `Delete product failed: ${response.status}`)
+      }
+
+      // Backend trả 204 No Content hoặc body rỗng
+      return true
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      throw error
+    }
+  }
+
   // ============ FAVOURITES API ============
 
   /**
@@ -143,6 +340,17 @@ class ApiService {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
+      
+      // ✅ Handle 401
+      if (response.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        if (window.location.pathname !== '/auth') {
+          alert('⚠️ Session expired. Please login again.')
+          window.location.href = '/auth'
+        }
+        throw new Error('Session expired')
+      }
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -168,6 +376,10 @@ class ApiService {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
+      
+      if (response.status === 401) {
+        throw new Error('Session expired')
+      }
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -196,6 +408,10 @@ class ApiService {
         }
       })
       
+      if (response.status === 401) {
+        throw new Error('Session expired')
+      }
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
@@ -222,6 +438,10 @@ class ApiService {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
+      
+      if (response.status === 401) {
+        throw new Error('Session expired')
+      }
       
       if (!response.ok) {
         const error = await response.json()
@@ -250,6 +470,10 @@ class ApiService {
         }
       })
       
+      if (response.status === 401) {
+        throw new Error('Session expired')
+      }
+      
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.detail || 'Failed to remove from favourites')
@@ -275,6 +499,10 @@ class ApiService {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
+      
+      if (response.status === 401) {
+        throw new Error('Session expired')
+      }
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -303,6 +531,16 @@ class ApiService {
         }
       })
       
+      if (response.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        if (window.location.pathname !== '/auth') {
+          alert('⚠️ Session expired. Please login again.')
+          window.location.href = '/auth'
+        }
+        throw new Error('Session expired')
+      }
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
@@ -327,6 +565,10 @@ class ApiService {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       })
+      
+      if (response.status === 401) {
+        throw new Error('Session expired')
+      }
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -355,6 +597,10 @@ class ApiService {
         },
         body: JSON.stringify({ quantity })
       })
+      
+      if (response.status === 401) {
+        throw new Error('Session expired')
+      }
       
       if (!response.ok) {
         const error = await response.json()
@@ -385,6 +631,10 @@ class ApiService {
         body: JSON.stringify({ quantity })
       })
       
+      if (response.status === 401) {
+        throw new Error('Session expired')
+      }
+      
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.detail || 'Failed to update cart')
@@ -412,6 +662,10 @@ class ApiService {
         }
       })
       
+      if (response.status === 401) {
+        throw new Error('Session expired')
+      }
+      
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.detail || 'Failed to remove from cart')
@@ -438,6 +692,10 @@ class ApiService {
         }
       })
       
+      if (response.status === 401) {
+        throw new Error('Session expired')
+      }
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
@@ -449,6 +707,566 @@ class ApiService {
       throw error
     }
   }
+
+  // ============ CHATBOT API ============
+
+  /**
+   * Send chat message
+   * @param {string} message - User message
+   */
+  async chat(message) {
+    return await this.request('POST', '/api/chatbot/chat', { message })
+  }
+
+  /**
+   * Get chat history
+   * @param {number} limit - Number of messages
+   */
+  async getChatHistory(limit = 10) {
+    return await this.request('GET', `/api/chatbot/history?limit=${limit}`)
+  }
+
+  /**
+   * Clear chat history
+   */
+  async clearChatHistory() {
+    return await this.request('DELETE', '/api/chatbot/history')
+  }
+  // ...existing code...
+
+// ============ INGREDIENTS API (ADMIN ONLY) ============
+
+/**
+ * Get all ingredients (Admin)
+ */
+async getIngredients() {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/ingredients`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      if (window.location.pathname !== '/auth') {
+        alert('⚠️ Session expired. Please login again.')
+        window.location.href = '/auth'
+      }
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching ingredients:', error)
+    throw error
+  }
+}
+
+/**
+ * Get low stock ingredients (Admin)
+ */
+async getLowStockIngredients() {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/ingredients/low-stock`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching low stock ingredients:', error)
+    throw error
+  }
+}
+
+/**
+ * Get ingredient by ID (Admin)
+ */
+async getIngredient(id) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/ingredients/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching ingredient:', error)
+    throw error
+  }
+}
+
+/**
+ * Create ingredient (Admin)
+ */
+async createIngredient(data) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/ingredients`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || `Create ingredient failed: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error creating ingredient:', error)
+    throw error
+  }
+}
+
+/**
+ * Update ingredient (Admin)
+ */
+async updateIngredient(id, data) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/ingredients/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || `Update ingredient failed: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error updating ingredient:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete ingredient (Admin)
+ */
+async deleteIngredient(id) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/ingredients/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || `Delete ingredient failed: ${response.status}`)
+    }
+    
+    return true
+  } catch (error) {
+    console.error('Error deleting ingredient:', error)
+    throw error
+  }
+}
+
+/**
+ * Import stock (Admin)
+ */
+async importStock(id, quantity, note = '') {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/ingredients/${id}/import`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ quantity, note })
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Import stock failed')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error importing stock:', error)
+    throw error
+  }
+}
+
+/**
+ * Export stock (Admin)
+ */
+async exportStock(id, quantity, note = '') {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/ingredients/${id}/export`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ quantity, note })
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Export stock failed')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error exporting stock:', error)
+    throw error
+  }
+}
+
+/**
+ * Get stock history (Admin)
+ */
+async getStockHistory(id) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/ingredients/${id}/history`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching stock history:', error)
+    throw error
+  }
+}
+/**
+ * Check if enough ingredients to make product
+ * @param {string} productId - Product ID
+ * @param {number} quantity - Quantity to make (default: 1)
+ */
+async checkProductIngredients(productId, quantity = 1) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(
+      `${API_URL}/products/${productId}/check-ingredients?quantity=${quantity}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    )
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error checking ingredients:', error)
+    throw error
+  }
+}
+// ...existing code...
+
+// ============ RECIPES API ============
+
+/**
+ * Get recipe by product ID (Public)
+ */
+async getRecipeByProduct(productId) {
+  try {
+    const response = await fetch(`${API_URL}/recipes/product/${productId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (response.status === 404) {
+      return null // Product không có recipe
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching recipe:', error)
+    return null
+  }
+}
+
+/**
+ * Get product story (Public)
+ */
+async getProductStory(productId) {
+  try {
+    const response = await fetch(`${API_URL}/recipes/product/${productId}/story`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    if (response.status === 404) {
+      return null
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching story:', error)
+    return null
+  }
+}
+
+/**
+ * Create recipe (Admin)
+ */
+async createRecipe(data) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/recipes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Create recipe failed')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error creating recipe:', error)
+    throw error
+  }
+}
+
+/**
+ * Update recipe (Admin)
+ */
+async updateRecipe(recipeId, data) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/recipes/${recipeId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Update recipe failed')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error updating recipe:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete recipe (Admin)
+ */
+async deleteRecipe(recipeId) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/recipes/${recipeId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Delete recipe failed')
+    }
+    
+    return true
+  } catch (error) {
+    console.error('Error deleting recipe:', error)
+    throw error
+  }
+}
+
+/**
+ * Get recipe cost (Admin)
+ */
+async getRecipeCost(recipeId) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/recipes/${recipeId}/cost`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching recipe cost:', error)
+    throw error
+  }
+}
+
+/**
+ * Deduct ingredients when selling product (Admin)
+ */
+async deductIngredientsForProduct(productId, quantity = 1) {
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`${API_URL}/recipes/product/${productId}/deduct?quantity=${quantity}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.status === 401) {
+      throw new Error('Session expired')
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Failed to deduct ingredients')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Error deducting ingredients:', error)
+    throw error
+  }
+}
+
+
 }
 
 export default new ApiService()

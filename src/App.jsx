@@ -13,33 +13,44 @@ import AdminQuestionsPage from './AdminQuestionsPage'
 import RequireAdmin from './RequireAdmin'
 import CartPage from './CartPage'
 import FavouritePage from './FavouritePage'
+import Chatbot from './Chatbot'  // ← THÊM IMPORT
+import AdminProductsPage from './AdminProductsPage'
+import IngredientsPage from './IngredientsPage'
+import RecipesPage from './RecipesPage'
 
 
 import './App.css'
 
 export default function App() {
   return (
-    <Routes>
-      <Route 
-        path="/" 
-        element={localStorage.getItem('token') ? <HomePage /> : <Navigate to="/auth" replace />} 
-      />
-      <Route path="/auth" element={<AuthPage />} />
-      <Route element={<RequireAuth />}>
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/menu" element={<MenuPage />} />
-        <Route path="/faq" element={<FAQPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/shop" element={<ShopPage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/favourites" element={<FavouritePage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
-        
-        <Route element={<RequireAdmin />}>
-          <Route path="/admin/questions" element={<AdminQuestionsPage />} />
+    <>
+      <Routes>
+        <Route 
+          path="/" 
+          element={localStorage.getItem('token') ? <HomePage /> : <Navigate to="/auth" replace />} 
+        />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route element={<RequireAuth />}>
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/menu" element={<MenuPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/favourites" element={<FavouritePage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/ingredients" element={<IngredientsPage />} />
+          <Route path="/recipes" element={<RecipesPage />} />
+          <Route element={<RequireAdmin />}>
+            <Route path="/admin/questions" element={<AdminQuestionsPage />} />
+            <Route path="/admin/products" element={<AdminProductsPage />} />
+          </Route>
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+
+      {/* Chatbot xuất hiện ở mọi trang trừ AuthPage */}
+      {window.location.pathname !== '/auth' && <Chatbot />}
+    </>
   )
 }

@@ -19,33 +19,39 @@ export default function CartPage() {
   }, [])
 
   const fetchCart = async () => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      setLoading(false)
+  const token = localStorage.getItem('token')
+  if (!token) {
+    setLoading(false)
+    return
+  }
+
+  setLoading(true)
+  setError(null)
+  
+  try {
+    const [items, total] = await Promise.all([
+      api.getCart(),
+      api.getCartTotal()
+    ])
+    
+    console.log('✅ Cart items:', items)
+    console.log('✅ Cart total:', total)
+    
+    setCartItems(items)
+    setCartTotal(total)
+  } catch (err) {
+    console.error('❌ Error fetching cart:', err)
+    
+    // ✅ Don't show error if session expired (already redirecting)
+    if (err.message === 'Session expired') {
       return
     }
-
-    setLoading(true)
-    setError(null)
     
-    try {
-      const [items, total] = await Promise.all([
-        api.getCart(),
-        api.getCartTotal()
-      ])
-      
-      console.log('✅ Cart items:', items)
-      console.log('✅ Cart total:', total)
-      
-      setCartItems(items)
-      setCartTotal(total)
-    } catch (err) {
-      console.error('❌ Error fetching cart:', err)
-      setError(err.message || 'Failed to load cart')
-    } finally {
-      setLoading(false)
-    }
+    setError(err.message || 'Failed to load cart')
+  } finally {
+    setLoading(false)
   }
+}
 
   const updateQuantity = async (productId, newQuantity) => {
     if (newQuantity < 1) return

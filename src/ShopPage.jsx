@@ -12,6 +12,7 @@ export default function ShopPage() {
   const [sortBy, setSortBy] = useState('default')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedProduct, setSelectedProduct] = useState(null)
   
   // ===== STATE CHO API DATA =====
   const [products, setProducts] = useState([])
@@ -29,14 +30,37 @@ export default function ShopPage() {
   // ===== STATE CHO CART ===== 
   const [cartLoading, setCartLoading] = useState({})
 
-  // ===== FETCH CATEGORIES & FAVOURITES KHI MOUNT =====
+  // ===== ADMIN STATE =====
+  const [showAdminForm, setShowAdminForm] = useState(false)
+  const [editingProduct, setEditingProduct] = useState(null)
+  const [adminForm, setAdminForm] = useState({
+    name: '',
+    category: 'birthday-cakes',
+    price: '',
+    description: '',
+    image: '',
+    badge: '',
+  })
+  
+  // ===== INGREDIENTS STATE =====
+  const [availableIngredients, setAvailableIngredients] = useState([])
+  const [selectedIngredients, setSelectedIngredients] = useState([])
+
+  const token = localStorage.getItem('token')
+  const userRole = localStorage.getItem('userRole')
+  const isAdmin = !!token && userRole === 'admin'
+
+  // ===== FETCH CATEGORIES & FAVOURITES & INGREDIENTS KHI MOUNT =====
   useEffect(() => {
     const initData = async () => {
       await fetchCategories()
       await fetchFavouriteIds()
+      if (isAdmin) {
+        await fetchAvailableIngredients()
+      }
     }
     initData()
-  }, [])
+  }, [isAdmin])
 
   // ===== FETCH PRODUCTS SAU KHI FAVOURITES ĐÃ LOAD =====
   useEffect(() => {
@@ -72,7 +96,6 @@ export default function ShopPage() {
       console.log('📡 [FETCH FAV] Calling API...')
       const favourites = await api.getFavourites({ skip: 0, limit: 100 })
       console.log('📦 [FETCH FAV] Raw API response:', favourites)
-      console.log('📊 [FETCH FAV] Number of favourites:', favourites.length)
       
       const ids = new Set(favourites.map(fav => fav.product.id))
       console.log('✅ [FETCH FAV] Favourite IDs Set:', Array.from(ids))
@@ -81,9 +104,23 @@ export default function ShopPage() {
       
     } catch (err) {
       console.error('❌ [FETCH FAV] Error fetching favourites:', err)
+      
+      if (err.message === 'Session expired') {
+        return
+      }
     } finally {
       console.log('🏁 [FETCH FAV] Finished, setting favouritesLoaded = true')
       setFavouritesLoaded(true)
+    }
+  }
+
+  // Fetch available ingredients (Admin only)
+  const fetchAvailableIngredients = async () => {
+    try {
+      const data = await api.getIngredients()
+      setAvailableIngredients(data)
+    } catch (err) {
+      console.error('Error fetching ingredients:', err)
     }
   }
 
@@ -138,6 +175,126 @@ export default function ShopPage() {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // ===== INGREDIENT MANAGEMENT =====
+  const addIngredientToProduct = () => {
+    setSelectedIngredients([
+      ...selectedIngredients,
+      { ingredient_id: '', quantity: '' }
+    ])
+  }
+
+  const removeIngredientFromProduct = (index) => {
+    setSelectedIngredients(selectedIngredients.filter((_, i) => i !== index))
+  }
+
+  const updateIngredientInList = (index, field, value) => {
+    const updated = [...selectedIngredients]
+    updated[index][field] = value
+    setSelectedIngredients(updated)
+  }
+
+  // ====== ADMIN FORM HANDLERS ======
+  const resetAdminForm = () => {
+    setEditingProduct(null)
+    setAdminForm({
+      name: '',
+      category: 'birthday-cakes',
+      price: '',
+      description: '',
+      image: '',
+      badge: '',
+    })
+    setSelectedIngredients([])
+  }
+
+  const handleAdminFormChange = (e) => {
+    const { name, value } = e.target
+    setAdminForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleAdminSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!isAdmin) {
+      alert('You do not have admin permissions')
+      return
+    }
+
+    const payload = {
+      ...adminForm,
+      price: Number(adminForm.price),
+      badge: adminForm.badge || null,
+      ingredients: selectedIngredients
+        .filter(ing => ing.ingredient_id && ing.quantity)
+        .map(ing => ({
+          ingredient_id: ing.ingredient_id,
+          quantity: parseFloat(ing.quantity)
+        }))
+    }
+
+    if (Number.isNaN(payload.price)) {
+      alert('Price must be a number')
+      return
+    }
+
+    try {
+      if (editingProduct) {
+        await api.updateProduct(editingProduct.id, payload)
+        alert('✅ Product updated successfully')
+      } else {
+        await api.createProduct(payload)
+        alert('✅ Product added successfully')
+      }
+
+      resetAdminForm()
+      setShowAdminForm(false)
+      fetchProducts()
+      fetchCategories()
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'An error occurred')
+    }
+  }
+
+  const handleEditProduct = (product) => {
+    if (!isAdmin) return
+    setEditingProduct(product)
+    setAdminForm({
+      name: product.name,
+      category: product.category,
+      price: String(product.price),
+      description: product.description,
+      image: product.image || '',
+      badge: product.badge || '',
+    })
+    
+    // Load ingredients của product
+    setSelectedIngredients(
+      product.ingredients?.map(ing => ({
+        ingredient_id: ing.ingredient_id,
+        quantity: String(ing.quantity_needed)
+      })) || []
+    )
+    
+    setShowAdminForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleDeleteProduct = async (id) => {
+    if (!isAdmin) return
+    if (!window.confirm('Delete this product?')) return
+
+    try {
+      await api.deleteProduct(id)
+      alert('✅ Product deleted successfully')
+      fetchProducts()
+      fetchCategories()
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'Error deleting product')
     }
   }
 
@@ -318,6 +475,26 @@ export default function ShopPage() {
               </div>
 
               <div className="toolbar-right">
+                {/* Admin Add Button */}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="admin-add-btn"
+                    onClick={() => {
+                      if (showAdminForm && editingProduct) {
+                        resetAdminForm()
+                      }
+                      setShowAdminForm((prev) => !prev)
+                    }}
+                  >
+                    {editingProduct
+                      ? 'Edit Product'
+                      : showAdminForm
+                      ? 'Close Form'
+                      : '+ Add Product'}
+                  </button>
+                )}
+
                 {/* View Mode */}
                 <div className="view-mode">
                   <button 
@@ -369,6 +546,156 @@ export default function ShopPage() {
               </div>
             </div>
 
+            {/* ===== ADMIN FORM (ADD / EDIT) ===== */}
+            {isAdmin && showAdminForm && (
+              <div className="admin-product-panel">
+                <h3 className="admin-panel-title">
+                  {editingProduct ? 'Edit Product' : 'Add New Product'}
+                </h3>
+                <form className="admin-product-form" onSubmit={handleAdminSubmit}>
+                  <label>
+                    Product Name
+                    <input
+                      name="name"
+                      value={adminForm.name}
+                      onChange={handleAdminFormChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Category
+                    <select
+                      name="category"
+                      value={adminForm.category}
+                      onChange={handleAdminFormChange}
+                    >
+                      <option value="birthday-cakes">Birthday Cakes</option>
+                      <option value="bread-savory">Bread &amp; Savory</option>
+                      <option value="cookies-minicakes">Cookies &amp; Minicakes</option>
+                      <option value="beverages">Beverages</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Price ($)
+                    <input
+                      type="number"
+                      name="price"
+                      min="0"
+                      step="0.01"
+                      value={adminForm.price}
+                      onChange={handleAdminFormChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Image URL
+                    <input
+                      name="image"
+                      value={adminForm.image}
+                      onChange={handleAdminFormChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Badge (NEW, SPECIAL, POPULAR, etc.)
+                    <input
+                      name="badge"
+                      value={adminForm.badge}
+                      onChange={handleAdminFormChange}
+                    />
+                  </label>
+
+                  <label className="admin-form-full">
+                    Description
+                    <textarea
+                      name="description"
+                      rows={3}
+                      value={adminForm.description}
+                      onChange={handleAdminFormChange}
+                      required
+                    />
+                  </label>
+
+                  {/* ===== INGREDIENTS SECTION ===== */}
+                  <div className="admin-form-full">
+                    <label className="ingredients-section-label">
+                      Ingredients (Optional)
+                      <button
+                        type="button"
+                        className="add-ingredient-btn"
+                        onClick={addIngredientToProduct}
+                      >
+                        + Add Ingredient
+                      </button>
+                    </label>
+                    
+                    <div className="ingredients-list">
+                      {selectedIngredients.map((ing, index) => (
+                        <div key={index} className="ingredient-row">
+                          <select
+                            value={ing.ingredient_id}
+                            onChange={(e) => updateIngredientInList(index, 'ingredient_id', e.target.value)}
+                            className="ingredient-select"
+                          >
+                            <option value="">Select ingredient...</option>
+                            {availableIngredients.map(avail => (
+                              <option key={avail.id} value={avail.id}>
+                                {avail.name} ({avail.quantity} {avail.unit} available)
+                              </option>
+                            ))}
+                          </select>
+                          
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="Quantity needed"
+                            value={ing.quantity}
+                            onChange={(e) => updateIngredientInList(index, 'quantity', e.target.value)}
+                            className="ingredient-quantity"
+                          />
+                          
+                          <button
+                            type="button"
+                            className="remove-ingredient-btn"
+                            onClick={() => removeIngredientFromProduct(index)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      
+                      {selectedIngredients.length === 0 && (
+                        <p className="no-ingredients-text">No ingredients added yet</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="admin-form-actions">
+                    <button type="submit" className="admin-save-btn">
+                      {editingProduct ? 'Save Changes' : 'Add Product'}
+                    </button>
+                    {editingProduct && (
+                      <button
+                        type="button"
+                        className="admin-cancel-btn"
+                        onClick={() => {
+                          resetAdminForm()
+                          setShowAdminForm(false)
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+            )}
+
             {/* Product Grid */}
             <div className={`product-grid cols-${viewMode}`}>
               {products.map(product => {
@@ -376,6 +703,19 @@ export default function ShopPage() {
                 
                 return (
                   <div key={product.id} className="product-card">
+                    {/* Info Icon - Top Left */}
+                    <button
+                      type="button"
+                      className="product-info-icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedProduct(product)
+                      }}
+                      title="View description"
+                    >
+                      i
+                    </button>
+
                     <div className="product-image-wrapper">
                       <img src={product.image} alt={product.name} className="product-image" />
                       {product.badge && (
@@ -384,7 +724,7 @@ export default function ShopPage() {
                         </span>
                       )}
                       
-                      {/* Favourite Button - Trên bên trái */}
+                      {/* Favourite Button - Top Left on image */}
                       <button 
                         className={`shop-favourite-btn ${isFav ? 'is-favourite' : ''}`}
                         onClick={(e) => {
@@ -397,7 +737,7 @@ export default function ShopPage() {
                         {favouriteLoading[product.id] ? '...' : '❤️'}
                       </button>
 
-                      {/* Cart Button - Dưới bên trái */}
+                      {/* Cart Button - Bottom Left on image */}
                       <button 
                         className="shop-cart-btn"
                         onClick={(e) => addToCart(product.id, e)}
@@ -412,10 +752,166 @@ export default function ShopPage() {
                       <h3 className="product-name">{product.name}</h3>
                       <p className="product-price">${product.price.toFixed(2)}</p>
                     </div>
+
+                    {/* Admin Actions */}
+                    {isAdmin && (
+                      <div className="admin-product-actions">
+                        <button
+                          type="button"
+                          className="admin-edit-btn"
+                          onClick={() => handleEditProduct(product)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-delete-btn"
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )
               })}
             </div>
+
+            {/* ===== MODAL - Product Detail with Recipe ===== */}
+            {selectedProduct && (
+              <div
+                className="product-modal-backdrop"
+                onClick={() => setSelectedProduct(null)}
+              >
+                <div
+                  className="product-modal"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className="product-modal-close"
+                    onClick={() => setSelectedProduct(null)}
+                  >
+                    ×
+                  </button>
+
+                  <h2 className="product-modal-title">{selectedProduct.name}</h2>
+
+                  <p className="product-modal-price">
+                    ${selectedProduct.price?.toFixed(2)}
+                  </p>
+
+                  {selectedProduct.image && (
+                    <img
+                      src={selectedProduct.image}
+                      alt={selectedProduct.name}
+                      className="product-modal-image"
+                    />
+                  )}
+
+                  <p className="product-modal-description">
+                    {selectedProduct.description || 'No description available for this product.'}
+                  </p>
+
+                  {/* ===== HIỂN THỊ INGREDIENTS ===== */}
+                  {selectedProduct.ingredients && selectedProduct.ingredients.length > 0 && (
+                    <div className="product-modal-ingredients">
+                      <h3 className="ingredients-title">🥘 Ingredients</h3>
+                      <ul className="ingredients-list-modal">
+                        {selectedProduct.ingredients.map((ing, idx) => (
+                          <li key={idx} className="ingredient-item">
+                            <span className="ingredient-name">{ing.name}</span>
+                            <span className="ingredient-quantity">
+                              {ing.quantity_needed} {ing.unit}
+                            </span>
+                            {!ing.is_sufficient && (
+                              <span className="ingredient-warning">
+                                ⚠️ Low stock ({ing.available_stock} {ing.unit} left)
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* ===== HIỂN THỊ RECIPE (nếu có) ===== */}
+                  {selectedProduct.recipe && (
+                    <div className="product-recipe-section">
+                      {/* Recipe Ingredients */}
+                      {selectedProduct.recipe.ingredients && selectedProduct.recipe.ingredients.length > 0 && (
+                        <div className="recipe-subsection">
+                          <h3 className="recipe-subtitle">🍳 Recipe Ingredients</h3>
+                          <ul className="recipe-ingredients-list">
+                            {selectedProduct.recipe.ingredients.map((ing, idx) => (
+                              <li key={idx} className="recipe-ingredient-item">
+                                <span className="ingredient-name">{ing.name}</span>
+                                <span className="ingredient-quantity">
+                                  {ing.quantity} {ing.unit}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Instructions */}
+                      {selectedProduct.recipe.instructions && (
+                        <div className="recipe-subsection">
+                          <h3 className="recipe-subtitle">📝 Instructions</h3>
+                          <p className="recipe-text">{selectedProduct.recipe.instructions}</p>
+                        </div>
+                      )}
+
+                      {/* Origin */}
+                      {selectedProduct.recipe.origin && (
+                        <div className="recipe-subsection">
+                          <h3 className="recipe-subtitle">🌍 Origin</h3>
+                          <p className="recipe-text">{selectedProduct.recipe.origin}</p>
+                        </div>
+                      )}
+
+                      {/* Story */}
+                      {selectedProduct.recipe.story && (
+                        <div className="recipe-subsection">
+                          <h3 className="recipe-subtitle">📖 Story</h3>
+                          <p className="recipe-text">{selectedProduct.recipe.story}</p>
+                        </div>
+                      )}
+
+                      {/* History */}
+                      {selectedProduct.recipe.history && (
+                        <div className="recipe-subsection">
+                          <h3 className="recipe-subtitle">🕰️ History</h3>
+                          <p className="recipe-text">{selectedProduct.recipe.history}</p>
+                        </div>
+                      )}
+
+                      {/* Prep & Cook Time */}
+                      {(selectedProduct.recipe.prep_time > 0 || selectedProduct.recipe.cook_time > 0) && (
+                        <div className="recipe-time-info">
+                          {selectedProduct.recipe.prep_time > 0 && (
+                            <span className="time-item">
+                              ⏱️ Prep: {selectedProduct.recipe.prep_time} mins
+                            </span>
+                          )}
+                          {selectedProduct.recipe.cook_time > 0 && (
+                            <span className="time-item">
+                              🍳 Cook: {selectedProduct.recipe.cook_time} mins
+                            </span>
+                          )}
+                          {selectedProduct.recipe.servings > 0 && (
+                            <span className="time-item">
+                              🍽️ Serves: {selectedProduct.recipe.servings}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Empty State */}
             {products.length === 0 && !loading && (
